@@ -35,12 +35,14 @@ type PrecompiledContract interface {
 // PrecompiledContractsHubble contains the default set of pre-compiled VNT
 // contracts used in the Hubble release.
 var PrecompiledContractsHubble = map[common.Address]PrecompiledContract{
+	// 部署默认的系统合约
 	common.BytesToAddress([]byte{9}): &election.Election{},
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
 func RunPrecompiledContract(context inter.ChainContext, p PrecompiledContract, input []byte, contract inter.Contract) (ret []byte, err error) {
 	gas := p.RequiredGas(input)
+	// 直接执行部署的合约
 	if contract.UseGas(gas) {
 		return p.Run(context, input, contract.Value())
 	}

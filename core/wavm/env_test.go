@@ -560,6 +560,7 @@ func TestVM_AddressTooShort(t *testing.T) {
 }
 
 func TestVM_AddressTooLong(t *testing.T) {
+
 	//log.Root().SetHandler(logHandler)
 	//defer clearLog()
 	//defer handlePanic(t, "wrong format of address string literal '0x0523029b179009a28a7fae478cd0c2e5ba2adc' with length '40'")

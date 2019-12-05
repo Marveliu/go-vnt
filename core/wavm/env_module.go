@@ -25,6 +25,7 @@ type EnvModule struct {
 	module    wasm.Module
 }
 
+// 初始化 envFuction
 func (m *EnvModule) InitModule(ctx *ChainContext) {
 	m.functions = EnvFunctions{}
 	m.functions.InitFuncTable(ctx)

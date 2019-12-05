@@ -130,6 +130,7 @@ func NewWavm(chainctx ChainContext, wavmConfig Config, iscreated bool) *Wavm {
 
 func (wavm *Wavm) ResolveImports(name string) (*wasm.Module, error) {
 	envModule := EnvModule{}
+	// 初始化 Module
 	envModule.InitModule(&wavm.ChainContext)
 	return envModule.GetModule(), nil
 }
@@ -205,8 +206,9 @@ func instantiateMemory(m *vnt.WavmMemory, module *wasm.Module) error {
 }
 
 func (wavm *Wavm) InstantiateModule(code []byte, memory []uint8) error {
-	wasm.SetDebugMode(false)
+	wasm.SetDebugMode(true)
 	buf := bytes.NewReader(code)
+	// 解析 wasm 中的 Module
 	m, err := wasm.ReadModule(buf, wavm.ResolveImports)
 	if err != nil {
 		log.Error("could not read module", "err", err)
@@ -256,6 +258,7 @@ func (wavm *Wavm) Apply(input []byte, compiled []vnt.Compiled, mutable Mutable) 
 		wavm.ChainContext.GasCounter.GasInitialMemory(memSize)
 	}
 
+	// 获得解释器
 	var vm *exec.Interpreter
 	vm, err = exec.NewInterpreter(wavm.Module, compiled, instantiateMemory, wavm.captureOp, wavm.captureEnvFunctionStart, wavm.captureEnvFunctionEnd, wavm.WavmConfig.Debug)
 	if err != nil {
@@ -272,6 +275,7 @@ func (wavm *Wavm) Apply(input []byte, compiled []vnt.Compiled, mutable Mutable) 
 	//
 	// vm.Contract.Gas = adjustedGas
 
+	// 执行方法
 	res, err = wavm.ExecCodeWithFuncName(input)
 	if err != nil {
 		return nil, err
@@ -295,6 +299,8 @@ func (wavm *Wavm) GetFallBackFunction() (int64, string) {
 }
 
 func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
+
+	// 栈记录
 	wavm.ChainContext.Wavm.depth++
 	defer func() { wavm.ChainContext.Wavm.depth-- }()
 	index := int64(0)
@@ -303,6 +309,8 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 	VM := wavm.VM
 	module := VM.Module()
 	Abi := wavm.ChainContext.Abi
+
+	// 如果是创建，则调用构造方法
 	if wavm.ChainContext.IsCreated == true {
 		val := Abi.Constructor
 		for name, e := range module.Export.Entries {
@@ -319,6 +327,7 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 		} else {
 			sig := input[:4]
 			input = input[4:]
+			// 调用方法查询
 			for name, e := range module.Export.Entries {
 				if val, ok := Abi.Methods[name]; ok {
 					res := val.Id()
@@ -333,19 +342,22 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 		}
 	}
 
+	// 查找是否有fallback方法
 	if matched == false {
-		//查找是否有fallback方法
 		index, funcName = wavm.GetFallBackFunction()
 		if index == -1 {
 			return nil, InvalidFunctionNameError(funcName)
 		}
 	}
 
+	// 是否可以接收来自交易中的原生代币
 	if wavm.payable(funcName) != true {
 		if wavm.ChainContext.Contract.Value().Cmp(new(big.Int).SetUint64(0)) > 0 {
 			return nil, InvalidPayableFunctionError(funcName)
 		}
 	}
+
+	// 调用查到的合约方法
 	wavm.currentFuncName = funcName
 	log.Debug("wavm", "exec function name", wavm.currentFuncName)
 	var method abi.Method
@@ -360,10 +372,12 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 	// 	input = vm.ChainContext.Input
 	// }
 
+	// 解析入参
 	for i, v := range method.Inputs {
 		if len(input) < 32*(i+1) {
 			return nil, IllegalInputError("")
 		}
+		// 获得对应的二进制位置
 		arg := input[(32 * i):(32 * (i + 1))]
 		switch v.Type.T {
 		case abi.StringTy: // variable arrays are written at the end of the return bytes
@@ -404,6 +418,8 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 			return nil, UnknownABITypeError(v.Type.String())
 		}
 	}
+
+	// 是否是 状态更改方法
 	if wavm.ChainContext.IsCreated == true {
 		*VM.Mutable = true
 	} else if funcName == FallBackFunctionName || funcName == FallBackPayableFunctionName {
@@ -422,11 +438,13 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 			wavm.ChainContext.Wavm.mutable = 0
 		}
 	} else {
+		// 状态更改 确实用 状态不更改的方式调用的
 		if wavm.ChainContext.Wavm.mutable == 0 && *VM.Mutable == true {
 			return nil, MismatchMutableFunctionError{0, 1}
 		}
 	}
 
+	// 执行
 	res, err := VM.ExecContractCode(index, args...)
 	if err != nil {
 		return nil, err
@@ -438,6 +456,7 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 		return nil, nil
 	}
 
+	// 出参解析
 	if val, ok := Abi.Methods[funcName]; ok {
 		outputs := val.Outputs
 		if len(outputs) != 0 {

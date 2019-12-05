@@ -292,7 +292,7 @@ func (n *Node) startInProc(apis []rpc.API) error {
 		if err := handler.RegisterName(api.Namespace, api.Service); err != nil {
 			return err
 		}
-		n.log.Debug("InProc registered", "service", api.Service, "namespace", api.Namespace)
+		n.log.Debug("InProc registered", "namespace", api.Namespace)
 	}
 	n.inprocHandler = handler
 	return nil
@@ -336,6 +336,7 @@ func (n *Node) stopIPC() {
 }
 
 // startHTTP initializes and starts the HTTP RPC endpoint.
+// 开启API服务
 func (n *Node) startHTTP(endpoint string, apis []rpc.API, modules []string, cors []string, vhosts []string) error {
 	// Short circuit if the HTTP endpoint isn't being exposed
 	if endpoint == "" {

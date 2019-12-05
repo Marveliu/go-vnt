@@ -59,7 +59,8 @@ type EnvFunctions struct {
 	funcTable map[string]wasm.Function
 }
 
-//InitFuncTable init event and contract_call function
+// InitFuncTable init event and contract_call function
+// 初始化 FuncTable
 func (ef *EnvFunctions) InitFuncTable(context *ChainContext) {
 	ef.ctx = context
 	ef.funcTable = ef.getFuncTable()
@@ -88,7 +89,7 @@ func (ef *EnvFunctions) InitFuncTable(context *ChainContext) {
 				panic(err)
 			}
 		}
-		//ef.funcTable[event.Name] = reflect.ValueOf(ef.getEvent(len(event.Inputs), event.Name))
+		// ef.funcTable[event.Name] = reflect.ValueOf(ef.getEvent(len(event.Inputs), event.Name))
 		ef.funcTable[event.Name] = wasm.Function{
 			Host: reflect.ValueOf(ef.getEvent(event.Name)),
 			Sig: &wasm.FunctionSig{
@@ -103,6 +104,7 @@ func (ef *EnvFunctions) InitFuncTable(context *ChainContext) {
 	}
 
 	// process contract calls
+	// 处理跨合约调用
 	for _, call := range ef.ctx.Abi.Calls {
 		paramTypes := make([]wasm.ValueType, len(call.Inputs)+1)
 		paramTypes[0] = wasm.ValueTypeI32
@@ -158,12 +160,12 @@ func (ef *EnvFunctions) InitFuncTable(context *ChainContext) {
 	}
 }
 
-//GetFuncTable get the env function table
+// GetFuncTable get the env function table
 func (ef *EnvFunctions) GetFuncTable() map[string]wasm.Function {
 	return ef.funcTable
 }
 
-//GetBalanceFromAddress get balance from address
+// GetBalanceFromAddress get balance from address
 func (ef *EnvFunctions) GetBalanceFromAddress(proc *exec.WavmProcess, locIndex uint64) uint64 {
 	ef.ctx.GasCounter.GasGetBalanceFromAddress()
 	ctx := ef.ctx
@@ -172,19 +174,19 @@ func (ef *EnvFunctions) GetBalanceFromAddress(proc *exec.WavmProcess, locIndex u
 	return ef.returnU256(proc, balance)
 }
 
-//GetBlockNumber get the block number
+// GetBlockNumber get the block number
 func (ef *EnvFunctions) GetBlockNumber(proc *exec.WavmProcess) uint64 {
 	ef.ctx.GasCounter.GasGetBlockNumber()
 	return ef.ctx.BlockNumber.Uint64()
 }
 
-//GetGas get the rest gas
+// GetGas get the rest gas
 func (ef *EnvFunctions) GetGas(proc *exec.WavmProcess) uint64 {
 	ef.ctx.GasCounter.GasGetGas()
 	return ef.ctx.Contract.Gas
 }
 
-//GetBlockHash get the block hash
+// GetBlockHash get the block hash
 func (ef *EnvFunctions) GetBlockHash(proc *exec.WavmProcess, blockNum uint64) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetBlockHash()
@@ -199,7 +201,7 @@ func (ef *EnvFunctions) GetBlockHash(proc *exec.WavmProcess, blockNum uint64) ui
 	}
 }
 
-//GetBlockProduser get the block produser address
+// GetBlockProduser get the block produser address
 func (ef *EnvFunctions) GetBlockProduser(proc *exec.WavmProcess) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetBlockProduser()
@@ -207,13 +209,13 @@ func (ef *EnvFunctions) GetBlockProduser(proc *exec.WavmProcess) uint64 {
 	return ef.returnAddress(proc, coinbase)
 }
 
-//GetTimestamp get the block timestamp
+// GetTimestamp get the block timestamp
 func (ef *EnvFunctions) GetTimestamp(proc *exec.WavmProcess) uint64 {
 	ef.ctx.GasCounter.GasGetTimestamp()
 	return ef.ctx.Time.Uint64()
 }
 
-//GetOrigin get tx origin
+// GetOrigin get tx origin
 func (ef *EnvFunctions) GetOrigin(proc *exec.WavmProcess) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetOrigin()
@@ -221,7 +223,7 @@ func (ef *EnvFunctions) GetOrigin(proc *exec.WavmProcess) uint64 {
 	return ef.returnAddress(proc, origin)
 }
 
-//GetSender get tx sender
+// GetSender get tx sender
 func (ef *EnvFunctions) GetSender(proc *exec.WavmProcess) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetSender()
@@ -229,14 +231,14 @@ func (ef *EnvFunctions) GetSender(proc *exec.WavmProcess) uint64 {
 	return ef.returnAddress(proc, sender)
 }
 
-//GetGasLimit get the block gaslimit
+// GetGasLimit get the block gaslimit
 func (ef *EnvFunctions) GetGasLimit(proc *exec.WavmProcess) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetGasLimit()
 	return ctx.GasLimit
 }
 
-//GetValue get tranfer vnt amount of a tx
+// GetValue get tranfer vnt amount of a tx
 func (ef *EnvFunctions) GetValue(proc *exec.WavmProcess) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetValue()
@@ -244,7 +246,7 @@ func (ef *EnvFunctions) GetValue(proc *exec.WavmProcess) uint64 {
 	return ef.returnU256(proc, val)
 }
 
-//SHA3
+// SHA3
 func (ef *EnvFunctions) SHA3(proc *exec.WavmProcess, dataIdx uint64) uint64 {
 	data := proc.ReadAt(dataIdx)
 	ef.ctx.GasCounter.GasSHA3(uint64(len(data)))
@@ -252,7 +254,7 @@ func (ef *EnvFunctions) SHA3(proc *exec.WavmProcess, dataIdx uint64) uint64 {
 	return uint64(proc.SetBytes(hash))
 }
 
-//Ecrecover
+// Ecrecover
 func (ef *EnvFunctions) Ecrecover(proc *exec.WavmProcess, hashptr uint64, sigv uint64, sigr uint64, sigs uint64) uint64 {
 	ef.ctx.GasCounter.GasEcrecover()
 	hashBytes := proc.ReadAt(hashptr)
@@ -286,7 +288,7 @@ func (ef *EnvFunctions) Ecrecover(proc *exec.WavmProcess, hashptr uint64, sigv u
 	return ef.returnAddress(proc, addr)
 }
 
-//GetContractAddress get contract address
+// GetContractAddress get contract address
 func (ef *EnvFunctions) GetContractAddress(proc *exec.WavmProcess) uint64 {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetContractAddress()
@@ -492,7 +494,7 @@ func (ef *EnvFunctions) getEvent(funcName string) interface{} {
 	return fnDef
 }
 
-//todo 如果一个unmutable的方法跨合约调用了一个mutable的方法 则会报错
+// todo 如果一个unmutable的方法跨合约调用了一个mutable的方法 则会报错
 func (ef *EnvFunctions) getContractCall(funcName string) interface{} {
 	Abi := ef.ctx.Abi
 
@@ -573,14 +575,17 @@ func (ef *EnvFunctions) getContractCall(funcName string) interface{} {
 		toAddr := common.BytesToAddress(proc.ReadAt(uint64(endianess.Uint32(proc.GetData()[vars[0]:]))))
 		amount := readU256FromMemory(proc, uint64(endianess.Uint32(proc.GetData()[vars[0]+4:])))
 		gascost := endianess.Uint64(proc.GetData()[vars[0]+8:])
+
 		// Get arguments from the memory.
 		// ef.ctx.GetWavm().GetCallGasTemp
-		//todo
+		// todo
+
 		var gaslimit *big.Int
 		gaslimit = new(big.Int).SetUint64(gascost)
 		gas := ef.ctx.GasCounter.GasCall(toAddr, amount, gaslimit, ef.ctx.BlockNumber, ef.ctx.Wavm.GetChainConfig(), ef.ctx.StateDB)
 		ef.ctx.Wavm.SetCallGasTemp(gas)
-		//免费提供额外的gas
+
+		// 免费提供额外的gas
 		if amount.Sign() != 0 {
 			gas += params.CallStipend
 		}
@@ -725,7 +730,7 @@ func (ef *EnvFunctions) getContractCall(funcName string) interface{} {
 		return nil
 	}
 
-	//return makeFunc(fnDef)
+	// return makeFunc(fnDef)
 }
 
 // End the line
@@ -745,7 +750,7 @@ func (ef *EnvFunctions) getPrintRemark(proc *exec.WavmProcess, remarkIdx uint64)
 
 // Print an Address
 func (ef *EnvFunctions) PrintAddress(proc *exec.WavmProcess, remarkIdx uint64, strIdx uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -756,7 +761,7 @@ func (ef *EnvFunctions) PrintAddress(proc *exec.WavmProcess, remarkIdx uint64, s
 
 // Print a string
 func (ef *EnvFunctions) PrintStr(proc *exec.WavmProcess, remarkIdx uint64, strIdx uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -767,7 +772,7 @@ func (ef *EnvFunctions) PrintStr(proc *exec.WavmProcess, remarkIdx uint64, strId
 
 // Print a string
 func (ef *EnvFunctions) PrintQStr(proc *exec.WavmProcess, remarkIdx uint64, strIdx uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -785,7 +790,7 @@ func (ef *EnvFunctions) PrintQStr(proc *exec.WavmProcess, remarkIdx uint64, strI
 
 // Print a uint64
 func (ef *EnvFunctions) PrintUint64T(proc *exec.WavmProcess, remarkIdx uint64, intValue uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -795,7 +800,7 @@ func (ef *EnvFunctions) PrintUint64T(proc *exec.WavmProcess, remarkIdx uint64, i
 
 // Print a uint32
 func (ef *EnvFunctions) PrintUint32T(proc *exec.WavmProcess, remarkIdx uint64, intValue uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -803,9 +808,9 @@ func (ef *EnvFunctions) PrintUint32T(proc *exec.WavmProcess, remarkIdx uint64, i
 	ef.printLine(msg)
 }
 
-//PrintInt64T  Print a int64
+// PrintInt64T  Print a int64
 func (ef *EnvFunctions) PrintInt64T(proc *exec.WavmProcess, remarkIdx uint64, intValue uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -813,9 +818,9 @@ func (ef *EnvFunctions) PrintInt64T(proc *exec.WavmProcess, remarkIdx uint64, in
 	ef.printLine(msg)
 }
 
-//PrintInt32T Print a int32
+// PrintInt32T Print a int32
 func (ef *EnvFunctions) PrintInt32T(proc *exec.WavmProcess, remarkIdx uint64, intValue uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -823,9 +828,9 @@ func (ef *EnvFunctions) PrintInt32T(proc *exec.WavmProcess, remarkIdx uint64, in
 	ef.printLine(msg)
 }
 
-//PrintUint256T Print a uint256
+// PrintUint256T Print a uint256
 func (ef *EnvFunctions) PrintUint256T(proc *exec.WavmProcess, remarkIdx uint64, idx uint64) {
-	if !ef.ctx.Wavm.wavmConfig.Debug {
+	if false && !ef.ctx.Wavm.wavmConfig.Debug {
 		return
 	}
 	ef.ctx.GasCounter.GasCostZero()
@@ -988,19 +993,25 @@ func getMemory(proc *exec.WavmProcess, addr uint64, addrType int32, isArrayIndex
 	return mem
 }
 func (ef *EnvFunctions) WriteWithPointer(proc *exec.WavmProcess, offsetAddr, baseAddr uint64) {
+	// 计算地址 基础 + 偏移
 	valAddr := offsetAddr + baseAddr
+	// 账户的 storageMap
 	storageMap := ef.ctx.StorageMapping
+	// 变量地址不在storageMap，禁止修改
 	if _, ok := storageMap[valAddr]; ok {
 		ef.forbiddenMutable(proc)
 	}
-	op := func(val storage.StorageMapping, keyHash common.Hash) {
 
+	// StorageMapping 操作函数
+	op := func(val storage.StorageMapping, keyHash common.Hash) {
+		// 获取 wavm memory 对应的值
 		valMem := getMemory(proc, val.StorageValue.ValueAddress, val.StorageValue.ValueType, false, 0)
 		statedb := ef.ctx.StateDB
 		contractAddr := ef.ctx.Contract.Address()
 		if val.StorageValue.ValueType == abi.TY_STRING {
 			beforeN := statedb.GetState(contractAddr, keyHash).Big().Int64()
 			n, s := utils.Split(valMem)
+			// gas 计算
 			ef.ctx.GasCounter.GasStore(statedb, contractAddr, keyHash, common.BigToHash(new(big.Int).SetInt64(int64(n))))
 			statedb.SetState(contractAddr, keyHash, common.BigToHash(new(big.Int).SetInt64(int64(n))))
 			for i := 1; i <= n; i++ {
@@ -1023,6 +1034,8 @@ func (ef *EnvFunctions) WriteWithPointer(proc *exec.WavmProcess, offsetAddr, bas
 			statedb.SetState(contractAddr, keyHash, common.BytesToHash(valMem))
 		}
 	}
+
+	// 调用StateDb修改
 	callStateDb(ef, proc, valAddr, op)
 }
 
@@ -1074,7 +1087,7 @@ func (ef *EnvFunctions) ReadWithPointer(proc *exec.WavmProcess, offsetAddr, base
 
 func (ef *EnvFunctions) InitializeVariables(proc *exec.WavmProcess) {
 	// 普通类型初始化，忽略mapping和array
-	//need to ignore array type because array init need array length
+	// need to ignore array type because array init need array length
 	storageMap := ef.ctx.StorageMapping
 	for k, v := range storageMap {
 		containArray := false
@@ -1238,7 +1251,7 @@ func (ef *EnvFunctions) AddGas(proc *exec.WavmProcess, cost uint64) {
 	ef.ctx.GasCounter.AdjustedCharge(cost)
 }
 
-//todo 考虑revert的完整实现 contractcall里需要用到revert
+// todo 考虑revert的完整实现 contractcall里需要用到revert
 func (ef *EnvFunctions) Revert(proc *exec.WavmProcess, msgIdx uint64) {
 	ctx := ef.ctx
 	ctx.GasCounter.GasRevert()
@@ -1272,7 +1285,7 @@ func (ef *EnvFunctions) returnHash(proc *exec.WavmProcess, hash []byte) uint64 {
 	return uint64(proc.SetBytes(hash))
 }
 
-//Sender for qlang
+// Sender for qlang
 func (ef *EnvFunctions) Sender(proc *exec.WavmProcess, ptr uint64) {
 	ctx := ef.ctx
 	ctx.GasCounter.GasGetSender()
@@ -1280,7 +1293,7 @@ func (ef *EnvFunctions) Sender(proc *exec.WavmProcess, ptr uint64) {
 	proc.WriteAt(sender, int64(ptr))
 }
 
-//Load for qlang
+// Load for qlang
 func (ef *EnvFunctions) Load(proc *exec.WavmProcess, keyptr uint64, dataptr uint64) uint64 {
 	keyData := ef.getQString(proc, keyptr)
 	keyHash := common.BytesToHash(keyData)
@@ -1298,7 +1311,7 @@ func (ef *EnvFunctions) Load(proc *exec.WavmProcess, keyptr uint64, dataptr uint
 	return uint64(len(stateVal))
 }
 
-//Store for qlang
+// Store for qlang
 func (ef *EnvFunctions) Store(proc *exec.WavmProcess, keyptr uint64, dataptr uint64) {
 	keyData := ef.getQString(proc, keyptr)
 	keyHash := common.BytesToHash(keyData)

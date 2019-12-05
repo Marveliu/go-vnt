@@ -82,7 +82,10 @@ func (wavm *WAVM) GetChainConfig() *params.ChainConfig {
 }
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
+// 执行wavm
 func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCreate bool) ([]byte, error) {
+
+	// 合约地址判断
 	if contract.CodeAddr != nil {
 		precompiles := vm.PrecompiledContractsHubble
 		if p := precompiles[*contract.CodeAddr]; p != nil {
@@ -93,6 +96,7 @@ func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCr
 		return nil, nil
 	}
 	var code wasmcontract.WasmCode
+	// 解码合约内容
 	decode, vmInput, err := utils.DecodeContractCode(contract.Code)
 	if err != nil {
 		return nil, err
@@ -106,9 +110,13 @@ func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCr
 	if err != nil {
 		return nil, err
 	}
+
+	// GAS 规则
 	gasRule := gas.NewGas(wavm.wavmConfig.DisableFloatingPoint)
 	gasTable := wavm.ChainConfig().GasTable(wavm.Context.BlockNumber)
 	gasCounter := gas.NewGasCounter(contract, gasTable)
+
+	// 上下文
 	crx := ChainContext{
 		CanTransfer: wavm.Context.CanTransfer,
 		Transfer:    wavm.Context.Transfer,
@@ -134,29 +142,40 @@ func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCr
 		GasTable:       gasTable,
 		StorageMapping: make(map[uint64]storage.StorageMapping),
 	}
+
+	// wavm 虚拟机
 	newwawm := NewWavm(crx, wavm.wavmConfig, isCreate)
 	wavm.Wavm = newwawm
+
 	err = newwawm.InstantiateModule(code.Code, []uint8{})
 	if err != nil {
 		return nil, err
 	}
+
+	// 判断是mutable方法
 	mutable := MutableFunction(abi, newwawm.Module)
 	var res []byte
+
+	// 合约创建
 	if isCreate == true {
 		// compile the wasm code: add gas counter, add statedb r/w
 		compiled, err := CompileModule(newwawm.Module, crx, mutable)
 		if err != nil {
 			return nil, err
 		}
+
+		// 执行构建方法
 		res, err = newwawm.Apply(input, compiled, mutable)
 		if err != nil {
 			return nil, err
 		}
+		// Json 化
 		compileres, err := json.Marshal(compiled)
 		if err != nil {
 			return nil, err
 		}
 		code.Compiled = compileres
+		// 将abi和wasm压缩后进行rlp编码
 		res = utils.CompressWasmAndAbi(code.Abi, code.Code, code.Compiled)
 	} else {
 		var compiled []vnt.Compiled
@@ -164,6 +183,7 @@ func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCr
 		if err != nil {
 			return nil, err
 		}
+		// 代码执行
 		res, err = newwawm.Apply(input, compiled, mutable)
 		if err != nil {
 			return nil, err
@@ -270,7 +290,9 @@ func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *
 // parameters. It also handles any necessary value transfer required and takes
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
+// 调用合约
 func (wavm *WAVM) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+
 	if wavm.wavmConfig.NoRecursion && wavm.depth > 0 {
 		return nil, gas, nil
 	}

@@ -144,6 +144,7 @@ func newWorker(config *params.ChainConfig, engine consensus.Engine, coinbase com
 	worker.chainSideSub = vnt.BlockChain().SubscribeChainSideEvent(worker.chainSideCh)
 	worker.recBftMsgSub = worker.mux.Subscribe(core.RecBftMsgEvent{})
 
+	// 获取拜占庭消息
 	go worker.recBftMsg()
 	go worker.update()
 
@@ -229,6 +230,7 @@ func (self *worker) stop() {
 	}
 }
 
+// 启动事件监听
 func (self *worker) update() {
 	defer self.txsSub.Unsubscribe()
 	defer self.chainHeadSub.Unsubscribe()
@@ -272,6 +274,7 @@ func (self *worker) update() {
 			}
 
 			// Only Dpos using
+		// 	Dpos roud 触发打包
 		case <-self.roundTimer.C:
 			if self.config.Dpos != nil {
 				self.commitNewWork()

@@ -76,6 +76,7 @@ func (mp *msgPool) addMsg(msg types.ConsensusMsg) error {
 	return nil
 }
 
+// 从消息池里面获得PrePareMsg
 func (mp *msgPool) getPrePrepareMsg(h *big.Int, r uint32) (*types.PreprepareMsg, error) {
 	mp.lock.RLock()
 	defer mp.lock.RUnlock()
@@ -116,6 +117,7 @@ func (mp *msgPool) getAllMsgOf(h *big.Int, r uint32) []types.ConsensusMsg {
 
 // getTwoThirdMajorityPrepareMsg get the majority prepare message, and the count of these
 // message must is bigger than 2f. otherwise, return nil, nil
+// 获得的 commitMessage 必须大于 2f
 func (mp *msgPool) getTwoThirdMajorityPrepareMsg(h *big.Int, r uint32) ([]*types.PrepareMsg, error) {
 	mp.lock.RLock()
 	defer mp.lock.RUnlock()

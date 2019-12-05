@@ -32,7 +32,8 @@ import (
 // be flagged `true`.
 // Input specifies the required input parameters for this gives method.
 type Method struct {
-	Name    string
+	Name string
+	// 是否需要发起交易
 	Const   bool
 	Inputs  Arguments
 	Outputs Arguments

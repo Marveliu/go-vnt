@@ -151,7 +151,7 @@ func readCompressType(src []byte) (uint16, error) {
 	return binary.LittleEndian.Uint16(buf[:]), nil
 }
 
-//将abi和wasm压缩后进行rlp编码
+// 将abi和wasm压缩后进行rlp编码
 func CompressWasmAndAbi(abijson, wasm, compiled []byte) []byte {
 	wasmcode := contract.WasmCode{
 		Code:     wasm,

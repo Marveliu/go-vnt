@@ -90,7 +90,6 @@ func StartIPCEndpoint(ipcEndpoint string, apis []API) (net.Listener, *Server, er
 		if err := handler.RegisterName(api.Namespace, api.Service); err != nil {
 			return nil, nil, err
 		}
-		log.Debug("IPC registered", "namespace", api.Namespace)
 	}
 	// All APIs registered, start the IPC listener.
 	listener, err := ipcListen(ipcEndpoint)

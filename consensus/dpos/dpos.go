@@ -149,6 +149,7 @@ func sigHash(header *types.Header) (hash common.Hash, err error) {
 }
 
 // ecrecover extracts the VNT account address from a signed header.
+// 通过签名的区块头获得VNT账户
 func ecrecover(header *types.Header, sigcache *lru.ARCCache) (common.Address, error) {
 	// If the signature's already cached, return that
 	hash := header.Hash()
@@ -192,12 +193,15 @@ func New(config *params.DposConfig, db vntdb.Database) *Dpos {
 		},
 	}
 
+	// bft 一致性算法
 	d.bft = newBftManager(d)
+	// 根据见证者人数和区块生成时间，设置见证者清单更新时间
 	d.setUpdateInterval()
 
 	return d
 }
 
+// 初始化bft
 func (d *Dpos) InitBft(sendBftMsg func(types.ConsensusMsg), SendPeerUpdate func(urls []string), verifyBlock func(*types.Block) (types.Receipts, []*types.Log, uint64, error), writeBlock func(*types.Block) error) {
 	d.sendBftPeerUpdateFn = SendPeerUpdate
 

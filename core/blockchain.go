@@ -1629,6 +1629,7 @@ func (bc *BlockChain) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscript
 }
 
 // VerifyBlockForBft only verify block behind the local canonical chain.
+// 验证不在本地区块链上的区块
 func (bc *BlockChain) VerifyBlockForBft(block *types.Block) (types.Receipts, []*types.Log, uint64, error) {
 	if block == nil {
 		return nil, nil, 0, ErrBlockIsNil

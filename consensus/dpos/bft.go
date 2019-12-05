@@ -29,6 +29,7 @@ import (
 )
 
 // BFT step
+// BFT 共识步骤
 const (
 	newRound    = uint32(0)
 	prePrePared = uint32(1)
@@ -40,11 +41,13 @@ const (
 )
 
 type BftManager struct {
-	dp       *Dpos // DPoS object
-	quorum   int   // 2f+1
+	dp *Dpos // DPoS object
+	// 法定人数
+	quorum   int // 2f+1
 	coinBase common.Address
 
-	mp      *msgPool // message pool of all future round bft messages, and not verified
+	mp *msgPool // message pool of all future round bft messages, and not verified
+	// 当前轮次的消息池，已经被验证过
 	roundMp *msgPool // message pool of current round, and been verified
 
 	// BFT state
@@ -53,6 +56,7 @@ type BftManager struct {
 	step        uint32                      // local BFT round, protect by atomic operation
 	witnessList map[common.Address]struct{} // current witness list, rely on producing
 
+	// 新一轮共识的锁
 	newRoundRWLock sync.RWMutex // RW lock for switch to new round
 
 	blockRound uint32 // round of sealing block, no need lock
@@ -95,6 +99,7 @@ func (b *BftManager) startPrePrepare(block *types.Block) {
 }
 
 func (b *BftManager) handleBftMsg(msg types.ConsensusMsg) error {
+
 	msgBlkNum, msgHash, msgType, msgRound := msg.GetBlockNum(), msg.Hash(), msg.Type(), msg.GetRound()
 	if msgBlkNum == nil {
 		return fmt.Errorf("bft msg's height is empty")
@@ -121,6 +126,7 @@ func (b *BftManager) handleBftMsg(msg types.ConsensusMsg) error {
 
 	// 比较高度
 	blkNumCmp := msgBlkNum.Cmp(b.h)
+
 	if blkNumCmp > 0 {
 		if err := b.mp.addMsg(msg); err != nil {
 			log.Error("add prepare msg to msg pool error", "err", err)
@@ -198,6 +204,7 @@ func (b *BftManager) handlePrePrepareMsg(msg *types.PreprepareMsg) error {
 
 	// Go to next step
 	if ok := atomic.CompareAndSwapUint32(&b.step, newRound, prePrePared); ok {
+		// 准备阶段
 		return b.startPrepare()
 	}
 	return nil
@@ -227,10 +234,12 @@ func (b *BftManager) startPrepare() error {
 
 	// The one of first changing step, send the msg
 	if ok := atomic.CompareAndSwapUint32(&b.step, prePrePared, preparing); ok {
+		// 发送 preMsg
 		b.sendMsg(preMsg)
 	}
 
 	// Maybe have enough prepare msg to enter commit, when pre-prepare msg comes after prepare msg
+	// 本地提交
 	return b.tryCommitStep()
 }
 
@@ -250,6 +259,7 @@ func (b *BftManager) tryCommitStep() error {
 		prepareMsgs []*types.PrepareMsg
 		err         error
 	)
+	// 是否获得了足够的见证
 	if prepareMsgs, err = b.roundMp.getTwoThirdMajorityPrepareMsg(b.h, b.r); err != nil {
 		return nil
 	}
@@ -293,6 +303,7 @@ func (b *BftManager) startCommit(prePreMsg *types.PreprepareMsg) error {
 
 // sendMsg only witness send bft message.
 // Caller make sure has the newRoundRWLock.
+// 向所有的 witness 发送bft message
 func (b *BftManager) sendMsg(msg types.ConsensusMsg) {
 	log.Trace("bft sendMsg start")
 	if _, ok := b.witnessList[b.coinBase]; ok {
@@ -301,6 +312,7 @@ func (b *BftManager) sendMsg(msg types.ConsensusMsg) {
 	log.Trace("bft sendMsg success")
 }
 
+// 尝试提交区块
 func (b *BftManager) tryWriteBlockStep() error {
 	log.Trace("TryWriteBlockStep")
 	defer log.Trace("TryWriteBlockStep exit")
@@ -366,6 +378,7 @@ func (b *BftManager) handleCommitMsg(msg *types.CommitMsg) error {
 }
 
 // writeBlock to block chain
+// 写区块
 func (b *BftManager) writeBlockWithSig(msg *types.PreprepareMsg, cmtMsg []*types.CommitMsg) error {
 	block := msg.Block
 	// Match pre-prepare msg and commit msg
@@ -373,6 +386,7 @@ func (b *BftManager) writeBlockWithSig(msg *types.PreprepareMsg, cmtMsg []*types
 		return fmt.Errorf("writeBlockWithSig error, commit msg for block: %s, not for block: %s", cmtMsg[0].BlockHash.String(), block.Hash().String())
 	}
 
+	// 见证人信息
 	block.FillBftMsg(cmtMsg)
 	log.Trace("writeBlockWithSig", "h", b.h.String(), "r", b.r, "hash", block.Hash().Hex())
 	return b.writeBlock(block)

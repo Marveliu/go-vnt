@@ -189,14 +189,18 @@ func (cb *CodeBlock) buildCode(blockDepth int, n int) *Code {
 }
 
 func CompileModule(module *wasm.Module, chainctx ChainContext, mutable Mutable) ([]vnt.Compiled, error) {
+
+	// 遍历所有的Function
 	Compiled := make([]vnt.Compiled, len(module.FunctionIndexSpace))
 	for i, fn := range module.FunctionIndexSpace {
+
 		// Skip native methods as they need not be
 		// disassembled; simply add them at the end
 		// of the `funcs` array as is, as specified
 		// in the spec. See the "host functions"
 		// section of:
 		// https://webassembly.github.io/spec/core/exec/modules.html#allocation
+		// Host Function 不需要解析
 		if fn.IsHost() {
 			continue
 		}
@@ -206,6 +210,7 @@ func CompileModule(module *wasm.Module, chainctx ChainContext, mutable Mutable) 
 		var maxDepth int
 		totalLocalVars := 0
 
+		// wagon 解析具体的函数代码，放入disassembly
 		disassembly, err := disasm.Disassemble(fn, module)
 		if err != nil {
 			return nil, err
@@ -213,11 +218,16 @@ func CompileModule(module *wasm.Module, chainctx ChainContext, mutable Mutable) 
 
 		maxDepth = disassembly.MaxDepth
 
+		// 本地变量
 		totalLocalVars += len(fn.Sig.ParamTypes)
 		for _, entry := range fn.Body.Locals {
 			totalLocalVars += int(entry.Count)
 		}
+
+		// 注入gas消耗计费代码
 		disassembly.Code = gas.InjectCounter(disassembly.Code, module, chainctx.GasRule)
+
+		// 重新编译wasm代码
 		code, table = Compile(disassembly.Code, module, mutable)
 		Compiled[i] = vnt.Compiled{
 			Code:           code,

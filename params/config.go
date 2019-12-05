@@ -134,9 +134,13 @@ type ChainConfig struct {
 	Dpos *DposConfig `json:"dpos,omitempty"`
 }
 
+// Dpos 配置
 type DposConfig struct {
-	Period       uint64   `json:"period"`       // Number of seconds between blocks to enforce
-	WitnessesNum int      `json:"witnessesnum"` // Number of witnesses
+	// 区块生成时间
+	Period uint64 `json:"period"` // Number of seconds between blocks to enforce
+	// 见证者清单
+	WitnessesNum int `json:"witnessesnum"` // Number of witnesses
+	// 见证者链接
 	WitnessesUrl []string `json:"witnessesUrl"`
 }
 
