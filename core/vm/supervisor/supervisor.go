@@ -115,9 +115,9 @@ func (sc supervisorContext) UpdateConfig(str string) error {
 	return nil
 }
 
-func (sc supervisorContext) GetConfig() (Config, error) {
-
-}
+// func (sc supervisorContext) GetConfig() (Config, error) {
+//
+// }
 
 type BizContract struct {
 	Address   common.Address // 合约地址

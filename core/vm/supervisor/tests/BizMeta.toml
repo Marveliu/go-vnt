@@ -1,26 +1,42 @@
-bizName = "技术成果交易"
-type = "n1"
-desc = "用于知识产权，专利等交易"
-version = 1.0
+bizName = "交易"
+bizType = "1"
+desc = "做个交易"
+version = 1
 
-# 定义监管信息格式配置
-[data.transaction]
-report = [1,2] # 汇报监管节点
-inputs = [
-    ["from","string"],
-    ["to","string"],
-    ["amount","string"],
-    ["pid","string"],
-    ["date","string"],
-]
+[[datas]]
+  name = "Obj1"
+  report = "1,2"
 
-# 定义业务任务配置
-[task.1]
-    [action.publish]
+  [[datas.fields]]
+    name = "From"
+    Type = "string"
+
+  [[datas.fields]]
+    name = "To"
+    Type = "string"
+
+[[datas]]
+  name = "Obj2"
+  report = "1"
+
+  [[datas.fields]]
+    name = "To"
+    Type = "string"
+
+[[tasks]]
+  name = "发布"
+  desc = "发布商品"
+
+  [[tasks.actions]]
     funcName = "publish"
+    funcType = 1
+    dataRef = "Obj1"
 
-[task.2]
-   [action.transaction]
-   funcName = "transaction"
-   funcType = 1
-   data = "transaction"
+[[tasks]]
+  name = "交易"
+  desc = "交易商品"
+
+  [[tasks.actions]]
+    funcName = "transaction"
+    funcType = 2
+    dataRef = "Obj3"
