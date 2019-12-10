@@ -100,6 +100,9 @@ const (
 	OpNameSender = "Sender"
 	OpNameLoad   = "Load"
 	OpNameStore  = "Store"
+
+	//supervisor
+	OpReport = "Report"
 )
 
 func (ef *EnvFunctions) getFuncTable() map[string]wasm.Function {
@@ -697,6 +700,16 @@ func (ef *EnvFunctions) getFuncTable() map[string]wasm.Function {
 			Host: reflect.ValueOf(ef.Store),
 			Sig: &wasm.FunctionSig{
 				ParamTypes:  []wasm.ValueType{wasm.ValueTypeI32, wasm.ValueTypeI32},
+				ReturnTypes: []wasm.ValueType{},
+			},
+			Body: &wasm.FunctionBody{
+				Code: []byte{},
+			},
+		},
+		OpReport: {
+			Host: reflect.ValueOf(ef.Report),
+			Sig: &wasm.FunctionSig{
+				ParamTypes:  []wasm.ValueType{wasm.ValueTypeI32},
 				ReturnTypes: []wasm.ValueType{},
 			},
 			Body: &wasm.FunctionBody{

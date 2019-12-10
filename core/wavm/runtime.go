@@ -334,7 +334,7 @@ func (wavm *Wavm) ExecCodeWithFuncName(input []byte) ([]byte, error) {
 	}
 
 	if matched == false {
-		//查找是否有fallback方法
+		// 查找是否有fallback方法
 		index, funcName = wavm.GetFallBackFunction()
 		if index == -1 {
 			return nil, InvalidFunctionNameError(funcName)

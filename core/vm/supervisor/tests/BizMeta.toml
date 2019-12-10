@@ -1,0 +1,26 @@
+bizName = "技术成果交易"
+type = "n1"
+desc = "用于知识产权，专利等交易"
+version = 1.0
+
+# 定义监管信息格式配置
+[data.transaction]
+report = [1,2] # 汇报监管节点
+inputs = [
+    ["from","string"],
+    ["to","string"],
+    ["amount","string"],
+    ["pid","string"],
+    ["date","string"],
+]
+
+# 定义业务任务配置
+[task.1]
+    [action.publish]
+    funcName = "publish"
+
+[task.2]
+   [action.transaction]
+   funcName = "transaction"
+   funcType = 1
+   data = "transaction"

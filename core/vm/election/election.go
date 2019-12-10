@@ -29,17 +29,17 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vntchain/go-vnt/accounts/abi"
 	"github.com/vntchain/go-vnt/common"
-	inter "github.com/vntchain/go-vnt/core/vm/interface"
+	"github.com/vntchain/go-vnt/core/vm/interface"
 	"github.com/vntchain/go-vnt/log"
 	"github.com/vntchain/go-vnt/vntp2p"
 )
 
 const (
-	ContractAddr = "0x0000000000000000000000000000000000000009"
-	VoteLimit    = 30
-	OneDay       = int64(24) * 3600
-	oneWeek      = OneDay * 7
-	year2019     = 1546272000
+	ContractAddr  = "0x0000000000000000000000000000000000000009"
+	VoteLimit     = 30
+	OneDay        = int64(24) * 3600
+	oneWeek       = OneDay * 7
+	year2019      = 1546272000
 	ElectionStart = int64(4443777)
 )
 

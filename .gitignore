@@ -48,3 +48,5 @@ profile.cov
 /tests/testcode/ldb/dump/*
 
 nohup.out
+/dev/
+/build/

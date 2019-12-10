@@ -64,7 +64,7 @@ func clearLog() {
 }
 
 func init() {
-	//log.Root().SetHandler(log.LvlFilterHandler(log.LvlTrace, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
+	// log.Root().SetHandler(log.LvlFilterHandler(log.LvlTrace, log.StreamHandler(os.Stderr, log.TerminalFormat(true))))
 	log.Root().SetHandler(logHandler)
 }
 
@@ -173,8 +173,8 @@ func getVM(codeFile string, abiPath string) (*exec.Interpreter, EnvFunctions) {
 		log.Crit("could not read module: ", "error", err)
 	}
 
-	//compiled, err := CompileModule(m, cc)
-	//compiled := make([]vnt.Compiled, 0)
+	// compiled, err := CompileModule(m, cc)
+	// compiled := make([]vnt.Compiled, 0)
 
 	vm, err := exec.NewInterpreter(m, nil, instantiateMemory, cc.Wavm.Wavm.captureOp, cc.Wavm.Wavm.captureEnvFunctionStart, cc.Wavm.Wavm.captureEnvFunctionEnd, false)
 	if err != nil {
@@ -352,133 +352,133 @@ func TestVM_getPrintRemark(t *testing.T) {
 }
 
 //
-//func TestVM_Event_One_Topic_No_Data(t *testing.T) {
-//	defer clearLog()
+// func TestVM_Event_One_Topic_No_Data(t *testing.T) {
+// 	defer clearLog()
 //
-//	vm, _ := getVM(eventCodePath, eventAbiPath)
-//	//proc := exec.NewWavmProcess(vm.VM, vm.Memory)
+// 	vm, _ := getVM(eventCodePath, eventAbiPath)
+// 	//proc := exec.NewWavmProcess(vm.VM, vm.Memory)
 
-//fmt.Println("testing...")
+// fmt.Println("testing...")
 //
-//	// make a fake db
-//	db := &fakeDB{}
+// 	// make a fake db
+// 	db := &fakeDB{}
 //
-//	// make a fake statedb object
-//	value := make([]byte, 1)
-//	value[0] = 0x01
-//	hash := common.BytesToHash(value)
-//	stateDB, _ := state.New(hash, db)
-//	tHash := common.BytesToHash(value)
-//	bHash := common.BytesToHash(value)
-//	stateDB.Prepare(tHash, bHash, 1)
-//	vm.StateDB = stateDB
+// 	// make a fake statedb object
+// 	value := make([]byte, 1)
+// 	value[0] = 0x01
+// 	hash := common.BytesToHash(value)
+// 	stateDB, _ := state.New(hash, db)
+// 	tHash := common.BytesToHash(value)
+// 	bHash := common.BytesToHash(value)
+// 	stateDB.Prepare(tHash, bHash, 1)
+// 	vm.StateDB = stateDB
 //
-//	// construct the memorydata
-//	evtName := "INIT"
-//	addr := "0xd2be7e0d40c1a73ec1709f00b11cb5e24c784077"
-//	address := common.HexToAddress(addr)
+// 	// construct the memorydata
+// 	evtName := "INIT"
+// 	addr := "0xd2be7e0d40c1a73ec1709f00b11cb5e24c784077"
+// 	address := common.HexToAddress(addr)
 //
-//	// construct the locals
-//	locals := vm.GetContext().GetLocals()
-//	locals = append(locals, uint64(vm.Memory.SetBytes([]byte(evtName))))
-//	locals = append(locals, uint64(vm.Memory.SetBytes(address.Bytes())))
-//	vm.GetContext().SetLocals(locals)
+// 	// construct the locals
+// 	locals := vm.GetContext().GetLocals()
+// 	locals = append(locals, uint64(vm.Memory.SetBytes([]byte(evtName))))
+// 	locals = append(locals, uint64(vm.Memory.SetBytes(address.Bytes())))
+// 	vm.GetContext().SetLocals(locals)
 //
-//	// Execute the target method
-//	vm.Event()
+// 	// Execute the target method
+// 	vm.Event()
 //
-//	// check the result
-//	addedLog := stateDB.GetLogs(tHash)
-//	assert.Equal(t, 1, len(addedLog))
-//	assert.Equal(t, tHash, addedLog[0].TxHash)
-//	assert.Equal(t, bHash, addedLog[0].BlockHash)
-//	assert.Equal(t, uint(1), addedLog[0].TxIndex)
-//	assert.Equal(t, uint(0), addedLog[0].Index)
-//	assert.Equal(t, 0, len(addedLog[0].Data))
-//	assert.Equal(t, 2, len(addedLog[0].Topics))
-//	assert.Equal(t, vm.Abi.Events[evtName].Id(), addedLog[0].Topics[0])
-//	assert.Equal(t, common.BytesToHash(address.Bytes()), addedLog[0].Topics[1])
-//}
+// 	// check the result
+// 	addedLog := stateDB.GetLogs(tHash)
+// 	assert.Equal(t, 1, len(addedLog))
+// 	assert.Equal(t, tHash, addedLog[0].TxHash)
+// 	assert.Equal(t, bHash, addedLog[0].BlockHash)
+// 	assert.Equal(t, uint(1), addedLog[0].TxIndex)
+// 	assert.Equal(t, uint(0), addedLog[0].Index)
+// 	assert.Equal(t, 0, len(addedLog[0].Data))
+// 	assert.Equal(t, 2, len(addedLog[0].Topics))
+// 	assert.Equal(t, vm.Abi.Events[evtName].Id(), addedLog[0].Topics[0])
+// 	assert.Equal(t, common.BytesToHash(address.Bytes()), addedLog[0].Topics[1])
+// }
 //
-//func TestVM_Event_Two_Topic_One_Data(t *testing.T) {
-//	defer clearLog()
-//	vm, ef := getVM(eventCodePath, eventAbiPath)
+// func TestVM_Event_Two_Topic_One_Data(t *testing.T) {
+// 	defer clearLog()
+// 	vm, ef := getVM(eventCodePath, eventAbiPath)
 //
-//	// construct the memorydata
-//	evtName := "TESTEVENT"
-//	addrFrom := "0xd2be7e0d40c1a73ec1709f00b11cb5e24c784077"
-//	addrTo := "0xd2be7e0d40c1a73ec1709f00b11cb5e24c784078"
-//	addressFrom := common.HexToAddress(addrFrom)
-//	addressTo := common.HexToAddress(addrTo)
+// 	// construct the memorydata
+// 	evtName := "TESTEVENT"
+// 	addrFrom := "0xd2be7e0d40c1a73ec1709f00b11cb5e24c784077"
+// 	addrTo := "0xd2be7e0d40c1a73ec1709f00b11cb5e24c784078"
+// 	addressFrom := common.HexToAddress(addrFrom)
+// 	addressTo := common.HexToAddress(addrTo)
 //
-//	var mutable = true
+// 	var mutable = true
 //
-//	proc := exec.NewWavmProcess(vm.VM, vm.Memory, &mutable)
+// 	proc := exec.NewWavmProcess(vm.VM, vm.Memory, &mutable)
 //
-//	fmt.Println("testing...")
+// 	fmt.Println("testing...")
 //
-//	// construct the locals
-//	var1 := uint64(proc.SetBytes(addressFrom.Bytes()))
-//	var2 := uint64(proc.SetBytes(addressTo.Bytes()))
-//	var3 := uint64(1000)
-//	var4 := uint64(proc.SetBytes([]byte("this is a balance transfer")))
+// 	// construct the locals
+// 	var1 := uint64(proc.SetBytes(addressFrom.Bytes()))
+// 	var2 := uint64(proc.SetBytes(addressTo.Bytes()))
+// 	var3 := uint64(1000)
+// 	var4 := uint64(proc.SetBytes([]byte("this is a balance transfer")))
 //
-//	fn := ef.GetFuncTable()[evtName].Host
-//	args := make([]reflect.Value, 5)
-//	args[0] = reflect.ValueOf(proc)
-//	//args[1] = reflect.ValueOf(var1)
-//	//args[2] = reflect.ValueOf(var2)
-//	//args[3] = reflect.ValueOf(var3)
-//	//args[4] = reflect.ValueOf(var4)
+// 	fn := ef.GetFuncTable()[evtName].Host
+// 	args := make([]reflect.Value, 5)
+// 	args[0] = reflect.ValueOf(proc)
+// 	//args[1] = reflect.ValueOf(var1)
+// 	//args[2] = reflect.ValueOf(var2)
+// 	//args[3] = reflect.ValueOf(var3)
+// 	//args[4] = reflect.ValueOf(var4)
 //
-//	//arg1 := reflect.New(fn.Type().In(0)).Elem()
-//	//arg2 := reflect.New(fn.Type().In(1)).Elem()
-//	//arg3 := reflect.New(fn.Type().In(2)).Elem()
-//	//arg4 := reflect.New(fn.Type().In(3)).Elem()
-//	//
-//	//arg1.SetUint(var1)
-//	//arg2.SetUint(var2)
-//	//arg3.SetUint(var3)
-//	//arg4.SetUint(var4)
+// 	//arg1 := reflect.New(fn.Type().In(0)).Elem()
+// 	//arg2 := reflect.New(fn.Type().In(1)).Elem()
+// 	//arg3 := reflect.New(fn.Type().In(2)).Elem()
+// 	//arg4 := reflect.New(fn.Type().In(3)).Elem()
+// 	//
+// 	//arg1.SetUint(var1)
+// 	//arg2.SetUint(var2)
+// 	//arg3.SetUint(var3)
+// 	//arg4.SetUint(var4)
 //
-//	args[1] = reflect.ValueOf(var1)
-//	args[2] = reflect.ValueOf(var2)
-//	args[3] = reflect.ValueOf(var3)
-//	args[4] = reflect.ValueOf(var4)
+// 	args[1] = reflect.ValueOf(var1)
+// 	args[2] = reflect.ValueOf(var2)
+// 	args[3] = reflect.ValueOf(var3)
+// 	args[4] = reflect.ValueOf(var4)
 //
-//	valueByte := make([]byte, 8)
-//	binary.BigEndian.PutUint64(valueByte, uint64(1000))
+// 	valueByte := make([]byte, 8)
+// 	binary.BigEndian.PutUint64(valueByte, uint64(1000))
 //
-//	// Execute the target method
-//	fn.Call(args)
+// 	// Execute the target method
+// 	fn.Call(args)
 //
-//	// check the result
-//	addedLog := ef.ctx.StateDB.GetLogs(tHash)
-//	assert.Equal(t, 1, len(addedLog))
-//	assert.Equal(t, tHash, addedLog[0].TxHash)
-//	assert.Equal(t, bHash, addedLog[0].BlockHash)
-//	assert.Equal(t, uint(1), addedLog[0].TxIndex)
-//	assert.Equal(t, uint(0), addedLog[0].Index)
-//	assert.Equal(t, 128, len(addedLog[0].Data))
-//	assert.Equal(t, valueByte, addedLog[0].Data[24:32])
-//	assert.Equal(t, 3, len(addedLog[0].Topics))
-//	assert.Equal(t, ef.ctx.Abi.Events[evtName].Id(), addedLog[0].Topics[0])
-//	assert.Equal(t, common.BytesToHash(addressFrom.Bytes()), addedLog[0].Topics[1])
-//	assert.Equal(t, common.BytesToHash(addressTo.Bytes()), addedLog[0].Topics[2])
-//}
+// 	// check the result
+// 	addedLog := ef.ctx.StateDB.GetLogs(tHash)
+// 	assert.Equal(t, 1, len(addedLog))
+// 	assert.Equal(t, tHash, addedLog[0].TxHash)
+// 	assert.Equal(t, bHash, addedLog[0].BlockHash)
+// 	assert.Equal(t, uint(1), addedLog[0].TxIndex)
+// 	assert.Equal(t, uint(0), addedLog[0].Index)
+// 	assert.Equal(t, 128, len(addedLog[0].Data))
+// 	assert.Equal(t, valueByte, addedLog[0].Data[24:32])
+// 	assert.Equal(t, 3, len(addedLog[0].Topics))
+// 	assert.Equal(t, ef.ctx.Abi.Events[evtName].Id(), addedLog[0].Topics[0])
+// 	assert.Equal(t, common.BytesToHash(addressFrom.Bytes()), addedLog[0].Topics[1])
+// 	assert.Equal(t, common.BytesToHash(addressTo.Bytes()), addedLog[0].Topics[2])
+// }
 
 func prepareState() *state.StateDB {
 	// make a fake db
-	//db := &fakeDB{}
+	// db := &fakeDB{}
 	//
-	//// make a fake statedb object
-	//value := make([]byte, 1)
-	//value[0] = 0x01
-	//hash := common.BytesToHash(value)
-	//stateDB, _ := state.New(hash, db)
-	//tHash := common.BytesToHash(value)
-	//bHash := common.BytesToHash(value)
-	//stateDB.Prepare(tHash, bHash, 1)
+	// // make a fake statedb object
+	// value := make([]byte, 1)
+	// value[0] = 0x01
+	// hash := common.BytesToHash(value)
+	// stateDB, _ := state.New(hash, db)
+	// tHash := common.BytesToHash(value)
+	// bHash := common.BytesToHash(value)
+	// stateDB.Prepare(tHash, bHash, 1)
 
 	db := vntdb.NewMemDatabase()
 	value := make([]byte, 1)
@@ -492,8 +492,8 @@ func prepareState() *state.StateDB {
 }
 
 func TestVM_Address(t *testing.T) {
-	//log.Root().SetHandler(logHandler)
-	//defer clearLog()
+	// log.Root().SetHandler(logHandler)
+	// defer clearLog()
 	vm, ef := getVM(eventCodePath, eventAbiPath)
 	var mutable = true
 
@@ -512,8 +512,8 @@ func TestVM_Address(t *testing.T) {
 }
 
 func TestVM_AddressNoPrefix(t *testing.T) {
-	//log.Root().SetHandler(logHandler)
-	//defer clearLog()
+	// log.Root().SetHandler(logHandler)
+	// defer clearLog()
 	vm, ef := getVM(eventCodePath, eventAbiPath)
 
 	mutable := true
@@ -534,9 +534,9 @@ func TestVM_AddressNoPrefix(t *testing.T) {
 }
 
 func TestVM_AddressTooShort(t *testing.T) {
-	//log.Root().SetHandler(logHandler)
-	//defer clearLog()
-	//defer handlePanic(t, "wrong format of address string literal '0x0523029b179009a28a7fae478cd0c2e5ba2adc' with length '40'")
+	// log.Root().SetHandler(logHandler)
+	// defer clearLog()
+	// defer handlePanic(t, "wrong format of address string literal '0x0523029b179009a28a7fae478cd0c2e5ba2adc' with length '40'")
 	vm, ef := getVM(eventCodePath, eventAbiPath)
 
 	mutable := true
@@ -560,9 +560,9 @@ func TestVM_AddressTooShort(t *testing.T) {
 }
 
 func TestVM_AddressTooLong(t *testing.T) {
-	//log.Root().SetHandler(logHandler)
-	//defer clearLog()
-	//defer handlePanic(t, "wrong format of address string literal '0x0523029b179009a28a7fae478cd0c2e5ba2adc' with length '40'")
+	// log.Root().SetHandler(logHandler)
+	// defer clearLog()
+	// defer handlePanic(t, "wrong format of address string literal '0x0523029b179009a28a7fae478cd0c2e5ba2adc' with length '40'")
 	vm, ef := getVM(eventCodePath, eventAbiPath)
 
 	mutable := true

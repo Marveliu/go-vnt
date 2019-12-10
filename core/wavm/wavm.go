@@ -193,6 +193,7 @@ func (wavm *WAVM) Cancel() {
 	atomic.StoreInt32(&wavm.abort, 1)
 }
 
+// 创建合约
 func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
 	// Depth check execution. Fail if we're trying to execute above the
 	// limit.
@@ -230,6 +231,7 @@ func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *
 	if wavm.wavmConfig.Debug && wavm.depth == 0 {
 		wavm.wavmConfig.Tracer.CaptureStart(caller.Address(), contractAddr, true, code, gas, value)
 	}
+
 	start := time.Now()
 	ret, err = runWavm(wavm, contract, nil, true)
 	// check whether the max code size has been exceeded

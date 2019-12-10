@@ -17,11 +17,12 @@
 package vm
 
 import (
+	"github.com/vntchain/go-vnt/core/vm/supervisor"
 	"math/big"
 
 	"github.com/vntchain/go-vnt/common"
 	"github.com/vntchain/go-vnt/core/vm/election"
-	inter "github.com/vntchain/go-vnt/core/vm/interface"
+	"github.com/vntchain/go-vnt/core/vm/interface"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -36,6 +37,7 @@ type PrecompiledContract interface {
 // contracts used in the Hubble release.
 var PrecompiledContractsHubble = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{9}): &election.Election{},
+	common.BytesToAddress([]byte{8}): &supervisor.Supervisor{},
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.
