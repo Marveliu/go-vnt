@@ -17,7 +17,7 @@
 package vm
 
 import (
-	"github.com/vntchain/go-vnt/core/vm/supervisor"
+	"github.com/vntchain/go-vnt/core/wavm/supervisor"
 	"math/big"
 
 	"github.com/vntchain/go-vnt/common"

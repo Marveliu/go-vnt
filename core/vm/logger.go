@@ -99,4 +99,6 @@ type Tracer interface {
 	CaptureLog(env VM, msg string) error
 	CaptureFault(env VM, pc uint64, op OPCode, gas, cost uint64, contract inter.Contract, depth int, err error) error
 	CaptureEnd(output []byte, gasUsed uint64, t time.Duration, err error) error
+	SampleStart(from common.Address, to common.Address, bizType string, input []byte, gas uint64, value *big.Int) error
+	SampleEnd(contract common.Address, usedGas uint64, failed bool, err error) error
 }

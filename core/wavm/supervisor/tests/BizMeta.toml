@@ -9,11 +9,11 @@ version = 1
 
   [[datas.fields]]
     name = "From"
-    Type = "string"
+    type = "string"
 
   [[datas.fields]]
     name = "To"
-    Type = "string"
+    type = "string"
 
 [[datas]]
   name = "Obj2"
@@ -21,7 +21,7 @@ version = 1
 
   [[datas.fields]]
     name = "To"
-    Type = "string"
+    type = "string"
 
 [[tasks]]
   name = "发布"

@@ -1,6 +1,9 @@
 package wavm
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"time"
@@ -11,12 +14,47 @@ import (
 	"github.com/vntchain/go-vnt/core/vm/interface"
 )
 
+const (
+	BizType_CREATE       = "create"
+	BizType_CALL         = "call"
+	BizType_CallCode     = "callCode"
+	BizType_DelegateCall = "delegateCall"
+	BizType_StaticCall   = "staticCall"
+)
+
+var (
+	ErrUnpairInvoke = errors.New("Capture start&end must come in pairs ")
+)
+
 type WasmLogger struct {
 	cfg       vm.LogConfig
 	logs      []StructLog
 	debugLogs []DebugLog
-	output    []byte
-	err       error
+
+	// Dig
+	digests []*Digest
+	depth   int
+
+	output []byte
+	err    error
+}
+
+type Digest struct {
+	From     common.Address `json:"from"`
+	To       common.Address `json:"to"`
+	Contract common.Address `json:"contract"`
+	Method   []byte         `json:"method"`
+	Value    *big.Int       `json:"value"`
+	Noce     uint64         `json:"bizNoce"`
+	BizType  string         `json:"bizType"`
+	GasPrice *big.Int       `json:"gas_price"`
+	Gas      uint64         `json:"gas"`
+	GasCost  uint64         `json:"gasCost"`
+	Result   bool           `json:"result"`
+	StartAt  time.Time      `json:"startAt"`
+	Duration time.Duration  `json:"duration"`
+	Err      string         `json:"err"`
+	Extra    string         `json:"extra"`
 }
 
 type StructLog struct {
@@ -105,4 +143,55 @@ func (l *WasmLogger) DebugLogs() []DebugLog { return l.debugLogs }
 // WriteTrace writes a formatted trace to the given writer
 func WriteTrace(writer io.Writer, logs []StructLog) {
 
+}
+
+func (l *WasmLogger) SampleStart(from common.Address, to common.Address, bizType string, input []byte, gas uint64, value *big.Int) error {
+	dig := &Digest{
+		From:    from,
+		To:      to,
+		BizType: bizType,
+		Gas:     gas,
+		Value:   value,
+		StartAt: time.Now(),
+	}
+	if input != nil {
+		dig.Method = input[:4]
+	}
+	l.digests = append(l.digests, dig)
+	l.depth++
+	return nil
+}
+
+func (l *WasmLogger) SampleEnd(contract common.Address, usedGas uint64, failed bool, err error) error {
+	if l.depth > len(l.digests) || l.depth < 0 {
+		return ErrUnpairInvoke
+	}
+	l.depth--
+	dig := l.digests[l.depth]
+	dig.Result = true
+	if err != nil {
+		dig.Err = err.Error()
+	}
+	dig.GasCost = usedGas
+	dig.Contract = contract
+	dig.Duration = time.Since(dig.StartAt)
+	if l.depth == 0 {
+		// 落入到区块再导出
+		l.Export()
+	}
+	return nil
+}
+
+func (l *WasmLogger) Export() error {
+	if l.depth != 0 {
+		return ErrUnpairInvoke
+	}
+	for i, entry := range l.digests {
+		bytes, err := json.Marshal(entry)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("index: %d, content: %s\n", i, string(bytes))
+	}
+	return nil
 }

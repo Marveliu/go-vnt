@@ -83,6 +83,7 @@ func (wavm *WAVM) GetChainConfig() *params.ChainConfig {
 
 // run runs the given contract and takes care of running precompiles with a fallback to the byte code interpreter.
 func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCreate bool) ([]byte, error) {
+
 	if contract.CodeAddr != nil {
 		precompiles := vm.PrecompiledContractsHubble
 		if p := precompiles[*contract.CodeAddr]; p != nil {
@@ -173,6 +174,7 @@ func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCr
 }
 
 func NewWAVM(ctx vm.Context, statedb inter.StateDB, chainConfig *params.ChainConfig, vmConfig vm.Config) *WAVM {
+
 	wavmConfig := Config{
 		Debug:       vmConfig.Debug,
 		Tracer:      vmConfig.Tracer,
@@ -195,14 +197,20 @@ func (wavm *WAVM) Cancel() {
 
 // 创建合约
 func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *big.Int) (ret []byte, contractAddr common.Address, leftOverGas uint64, err error) {
-	// Depth check execution. Fail if we're trying to execute above the
-	// limit.
+
+	wavm.wavmConfig.Tracer.SampleStart(caller.Address(), common.Address{}, BizType_CREATE, nil, gas, value)
+	defer func() {
+		wavm.wavmConfig.Tracer.SampleEnd(contractAddr, leftOverGas, false, err)
+	}()
+
+	// Depth check execution. Fail if we're trying to execute above the limit.
 	if wavm.depth > int(params.CallCreateDepth) {
 		return nil, common.Address{}, gas, errorsmsg.ErrDepth
 	}
 	if !wavm.CanTransfer(wavm.StateDB, caller.Address(), value) {
 		return nil, common.Address{}, gas, errorsmsg.ErrInsufficientBalance
 	}
+
 	// Ensure there's no existing contract already at the designated address
 	nonce := wavm.StateDB.GetNonce(caller.Address())
 	wavm.StateDB.SetNonce(caller.Address(), nonce+1)
@@ -210,8 +218,13 @@ func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *
 	contractAddr = crypto.CreateAddress(caller.Address(), nonce)
 	contractHash := wavm.StateDB.GetCodeHash(contractAddr)
 	if wavm.StateDB.GetNonce(contractAddr) != 0 || (contractHash != (common.Hash{}) && contractHash != emptyCodeHash) {
-		return nil, common.Address{}, 0, errorsmsg.ErrContractAddressCollision
+		ret = nil
+		contractAddr = common.Address{}
+		leftOverGas = 0
+		err = errorsmsg.ErrContractAddressCollision
+		return ret, contractAddr, leftOverGas, err
 	}
+
 	// Create a new account on the state
 	snapshot := wavm.StateDB.Snapshot()
 	wavm.StateDB.CreateAccount(contractAddr)
@@ -225,7 +238,8 @@ func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *
 	contract.SetCallCode(&contractAddr, crypto.Keccak256Hash(code), code)
 
 	if wavm.wavmConfig.NoRecursion && wavm.depth > 0 {
-		return nil, contractAddr, gas, nil
+		leftOverGas = gas
+		return ret, contractAddr, leftOverGas, err
 	}
 
 	if wavm.wavmConfig.Debug && wavm.depth == 0 {
@@ -258,13 +272,16 @@ func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *
 			contract.UseGas(contract.Gas)
 		}
 	}
+
 	// Assign err if contract code size exceeds the max while the err is still empty.
 	if maxCodeSizeExceeded && err == nil {
 		err = errorsmsg.ErrMaxCodeSizeExceeded
 	}
+
 	if wavm.wavmConfig.Debug && wavm.depth == 0 {
 		wavm.wavmConfig.Tracer.CaptureEnd(ret, gas-contract.Gas, time.Since(start), err)
 	}
+
 	return ret, contractAddr, contract.Gas, err
 }
 
@@ -273,6 +290,12 @@ func (wavm *WAVM) Create(caller vm.ContractRef, code []byte, gas uint64, value *
 // the necessary steps to create accounts and reverses the state in case of an
 // execution error or failed value transfer.
 func (wavm *WAVM) Call(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+
+	wavm.wavmConfig.Tracer.SampleStart(caller.Address(), addr, BizType_CALL, input, gas, value)
+	defer func() {
+		wavm.wavmConfig.Tracer.SampleEnd(addr, leftOverGas, false, err)
+	}()
+
 	if wavm.wavmConfig.NoRecursion && wavm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -305,21 +328,18 @@ func (wavm *WAVM) Call(caller vm.ContractRef, addr common.Address, input []byte,
 	// Initialise a new contract and set the code that is to be used by the WAVM.
 	// The contract is a scoped environment for this execution context only.
 	contract := wasmcontract.NewWASMContract(caller, to, value, gas)
-
 	code := wavm.StateDB.GetCode(addr)
-
 	contract.SetCallCode(&addr, wavm.StateDB.GetCodeHash(addr), code)
-
 	start := time.Now()
 
 	// Capture the tracer start/end events in debug mode
 	if wavm.wavmConfig.Debug && wavm.depth == 0 {
 		wavm.wavmConfig.Tracer.CaptureStart(caller.Address(), addr, false, input, gas, value)
-
 		defer func() { // Lazy evaluation of the parameters
 			wavm.wavmConfig.Tracer.CaptureEnd(ret, gas-contract.Gas, time.Since(start), err)
 		}()
 	}
+
 	ret, err = runWavm(wavm, contract, input, false)
 	// When an error was returned by the WAVM or when setting the creation code
 	// above we revert to the snapshot and consume any gas remaining. Additionally
@@ -330,6 +350,7 @@ func (wavm *WAVM) Call(caller vm.ContractRef, addr common.Address, input []byte,
 			contract.UseGas(contract.Gas)
 		}
 	}
+
 	return ret, contract.Gas, err
 }
 
@@ -341,6 +362,12 @@ func (wavm *WAVM) Call(caller vm.ContractRef, addr common.Address, input []byte,
 // CallCode differs from Call in the sense that it executes the given address'
 // code with the caller as context.
 func (wavm *WAVM) CallCode(caller vm.ContractRef, addr common.Address, input []byte, gas uint64, value *big.Int) (ret []byte, leftOverGas uint64, err error) {
+
+	wavm.wavmConfig.Tracer.SampleStart(caller.Address(), addr, BizType_CallCode, input, gas, value)
+	defer func() {
+		wavm.wavmConfig.Tracer.SampleEnd(addr, leftOverGas, false, err)
+	}()
+
 	if wavm.wavmConfig.NoRecursion && wavm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -377,6 +404,10 @@ func (wavm *WAVM) CallCode(caller vm.ContractRef, addr common.Address, input []b
 	return ret, contract.Gas, err
 }
 func (wavm *WAVM) DelegateCall(caller vm.ContractRef, addr common.Address, input []byte, gas uint64) (ret []byte, leftOverGas uint64, err error) {
+
+	wavm.wavmConfig.Tracer.SampleStart(caller.Address(), addr, BizType_DelegateCall, input, gas, nil)
+	wavm.wavmConfig.Tracer.SampleEnd(addr, leftOverGas, false, err)
+
 	if wavm.wavmConfig.NoRecursion && wavm.depth > 0 {
 		return nil, gas, nil
 	}
@@ -420,15 +451,12 @@ func (wavm *WAVM) ChainConfig() *params.ChainConfig {
 func (wavm *WAVM) GetContext() vm.Context {
 	return wavm.Context
 }
-
 func (wavm *WAVM) GetOrigin() common.Address {
 	return wavm.Origin
 }
-
 func (wavm *WAVM) GetTime() *big.Int {
 	return wavm.Time
 }
-
 func (wavm *WAVM) GetBlockNum() *big.Int {
 	return wavm.BlockNumber
 }

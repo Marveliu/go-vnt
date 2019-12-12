@@ -22,7 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/vntchain/go-vnt/core/vm/supervisor"
+	"github.com/vntchain/go-vnt/core/wavm/supervisor"
 	"math/big"
 	"reflect"
 	"strconv"

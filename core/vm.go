@@ -23,7 +23,7 @@ import (
 	"github.com/vntchain/go-vnt/consensus"
 	"github.com/vntchain/go-vnt/core/types"
 	"github.com/vntchain/go-vnt/core/vm"
-	inter "github.com/vntchain/go-vnt/core/vm/interface"
+	"github.com/vntchain/go-vnt/core/vm/interface"
 	"github.com/vntchain/go-vnt/core/wavm"
 	"github.com/vntchain/go-vnt/params"
 )
@@ -100,5 +100,10 @@ func Transfer(db inter.StateDB, sender, recipient common.Address, amount *big.In
 }
 
 func GetVM(msg Message, ctx vm.Context, statedb inter.StateDB, chainConfig *params.ChainConfig, vmConfig vm.Config) vm.VM {
+
+	// TODO 开启判断
+	if vmConfig.Tracer == nil {
+		vmConfig.Tracer = wavm.NewWasmLogger(nil)
+	}
 	return wavm.NewWAVM(ctx, statedb, chainConfig, vmConfig)
 }
