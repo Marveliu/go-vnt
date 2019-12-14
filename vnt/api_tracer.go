@@ -564,10 +564,10 @@ func (api *PrivateDebugAPI) traceTx(ctx context.Context, message core.Message, v
 	)
 	switch {
 	case config == nil:
-		tracer = wavm.NewWasmLogger(nil)
+		tracer = wavm.NewWasmLogger(nil, nil)
 
 	default:
-		tracer = wavm.NewWasmLogger(config.LogConfig)
+		tracer = wavm.NewWasmLogger(config.LogConfig, nil)
 	}
 	// Run the transaction with tracing enabled.
 	vmenv := core.GetVM(message, vmctx, statedb, api.config, vm.Config{Debug: true, Tracer: tracer})

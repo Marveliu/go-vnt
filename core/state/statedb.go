@@ -625,3 +625,7 @@ func (s *StateDB) Commit(deleteEmptyObjects bool) (root common.Hash, err error) 
 	log.Debug("Trie cache stats after commit", "misses", trie.CacheMisses(), "unloads", trie.CacheUnloads())
 	return root, err
 }
+
+func (s *StateDB) GetThash() common.Hash {
+	return s.thash
+}

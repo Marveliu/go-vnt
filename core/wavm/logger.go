@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/vntchain/go-vnt/core/state"
 	"io"
 	"math/big"
 	"time"
@@ -37,6 +38,8 @@ type WasmLogger struct {
 
 	output []byte
 	err    error
+
+	thash common.Hash
 }
 
 type Digest struct {
@@ -93,8 +96,13 @@ func (s *StructLog) ErrorString() string {
 	return ""
 }
 
-func NewWasmLogger(cfg *vm.LogConfig) *WasmLogger {
+func NewWasmLogger(cfg *vm.LogConfig, st inter.StateDB) *WasmLogger {
 	logger := &WasmLogger{}
+	if st != nil {
+		if cur, ok := st.(*state.StateDB); ok {
+			logger.thash = cur.GetThash()
+		}
+	}
 	if cfg != nil {
 		logger.cfg = *cfg
 	}
@@ -191,7 +199,7 @@ func (l *WasmLogger) Export() error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("index: %d, content: %s\n", i, string(bytes))
+		fmt.Printf("tx: %s, index: %d, content: %s\n", l.thash.Hex(), i, string(bytes))
 	}
 	return nil
 }

@@ -103,7 +103,7 @@ func GetVM(msg Message, ctx vm.Context, statedb inter.StateDB, chainConfig *para
 
 	// TODO 开启判断
 	if vmConfig.Tracer == nil {
-		vmConfig.Tracer = wavm.NewWasmLogger(nil)
+		vmConfig.Tracer = wavm.NewWasmLogger(nil, statedb)
 	}
 	return wavm.NewWAVM(ctx, statedb, chainConfig, vmConfig)
 }
