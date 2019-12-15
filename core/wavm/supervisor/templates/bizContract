@@ -1,0 +1,30 @@
+#include "vntlib.h"
+
+
+// ************* 监管数据定义 begin ************* //
+{{range $i, $d := .Datas}}
+EVENT REPORT_{{$d.Name}}(string name{{range $i, $f := $d.Fields}},{{$f.Type}} {{$f.Name}}{{end}});
+{{end}}
+// ************* 监管数据定义 end ************* //
+
+// 初始化
+constructor {{ .BizName }}()
+{
+	// implement me!
+}
+
+// ************* 业务方法 begin ************* //
+{{range $i, $t := .Tasks}}
+// ************* 业务: {{$t.Name}}, 描述: {{$t.Desc}}
+{{range $i, $a := $t.Actions}}
+{{if $a.Mutable}}MUTABLE{{else}}UNMUTABLE{{end}}
+void {{ $a.FuncName }}(){
+{{if ne $a.DataRef ""}}
+	// implement me!
+	REPORT_{{$a.DataRef}}("{{$a.DataRef}}", );
+{{end}}
+}
+{{end}}
+{{end}}
+// ************* 业务方法 end ************* //
+

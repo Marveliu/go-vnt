@@ -14,7 +14,7 @@ var (
 
 type Action struct {
 	FuncName string `toml:"funcName"`
-	FuncType int    `toml:"funcType"`
+	Mutable  bool   `toml:"mutable"`
 	DataRef  string `toml:"dataRef"`
 }
 

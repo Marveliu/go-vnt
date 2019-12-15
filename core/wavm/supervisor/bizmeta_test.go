@@ -24,10 +24,10 @@ func TestBizMetaRW(t *testing.T) {
 		},
 		[]Task{
 			{"发布", "发布商品", []Action{
-				Action{"publish", 1, "Obj1"},
+				Action{"publish", true, "Obj1"},
 			}},
 			{"交易", "交易商品", []Action{
-				Action{"transaction", 2, "Obj3"},
+				Action{"transaction", false, "Obj3"},
 			}},
 		},
 	}

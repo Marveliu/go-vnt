@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/vntchain/go-vnt/common/math"
 
@@ -89,16 +90,31 @@ func (ef *EnvFunctions) InitFuncTable(context *ChainContext) {
 				panic(err)
 			}
 		}
+
 		// ef.funcTable[event.Name] = reflect.ValueOf(ef.getEvent(len(event.Inputs), event.Name))
-		ef.funcTable[event.Name] = wasm.Function{
-			Host: reflect.ValueOf(ef.getEvent(event.Name)),
-			Sig: &wasm.FunctionSig{
-				ParamTypes:  paramTypes,
-				ReturnTypes: []wasm.ValueType{},
-			},
-			Body: &wasm.FunctionBody{
-				Code: []byte{},
-			},
+		// 解析监管事件
+		if strings.HasPrefix(event.Name, "REPORT") {
+			ef.funcTable[event.Name] = wasm.Function{
+				Host: reflect.ValueOf(ef.getReport(event.Name)),
+				Sig: &wasm.FunctionSig{
+					ParamTypes:  paramTypes,
+					ReturnTypes: []wasm.ValueType{},
+				},
+				Body: &wasm.FunctionBody{
+					Code: []byte{},
+				},
+			}
+		} else {
+			ef.funcTable[event.Name] = wasm.Function{
+				Host: reflect.ValueOf(ef.getEvent(event.Name)),
+				Sig: &wasm.FunctionSig{
+					ParamTypes:  paramTypes,
+					ReturnTypes: []wasm.ValueType{},
+				},
+				Body: &wasm.FunctionBody{
+					Code: []byte{},
+				},
+			}
 		}
 
 	}
@@ -489,7 +505,6 @@ func (ef *EnvFunctions) getEvent(funcName string) interface{} {
 		ef.ctx.GasCounter.GasLog(uint64(len(data)), uint64(len(topics)))
 		log.Debug("Added event log.")
 	}
-
 	return fnDef
 }
 
@@ -1376,4 +1391,96 @@ func (ef *EnvFunctions) Report(proc *exec.WavmProcess, strIdx uint64) {
 	} else {
 		ef.ctx.Contract.Gas += returnGas
 	}
+}
+
+func (ef *EnvFunctions) getReport(funcName string) interface{} {
+	fnDef := func(proc *exec.WavmProcess, vars ...uint64) {
+		ef.forbiddenMutable(proc)
+		Abi := ef.ctx.Abi
+
+		var event abi.Event
+		var ok bool
+		if event, ok = Abi.Events[funcName]; !ok {
+			panic(fmt.Sprintf(errNoEvent, funcName))
+		}
+
+		abiParamLen := len(event.Inputs)
+		paramLen := len(vars)
+
+		if abiParamLen != paramLen {
+			panic(fmt.Sprintf(errEventArgsMismatch, abiParamLen, paramLen))
+		}
+
+		topics := make([]common.Hash, 0)
+		data := make([]byte, 0)
+
+		topics = append(topics, event.Id())
+
+		strStartIndex := make([]int, 0)
+		strData := make([][]byte, 0)
+
+		for i := 0; i < paramLen; i++ {
+			input := event.Inputs[i]
+			indexed := input.Indexed
+			paramType := input.Type.T
+			param := vars[i]
+			var value []byte
+			switch paramType {
+			case abi.AddressTy, abi.StringTy:
+				value = proc.ReadAt(param)
+			case abi.UintTy, abi.IntTy:
+				if input.Type.Kind == reflect.Ptr {
+					mem := proc.ReadAt(param)
+					bigint := utils.GetU256(mem)
+					value = abi.U256(bigint)
+				} else if paramType == abi.UintTy {
+					value = abi.U256(new(big.Int).SetUint64(param))
+				} else {
+					if input.Type.Size == 32 {
+						value = abi.U256(big.NewInt(int64(int32(param))))
+					} else {
+						value = abi.U256(big.NewInt(int64(param)))
+					}
+				}
+			case abi.BoolTy:
+				if param == 1 {
+					value = mat.PaddedBigBytes(common.Big1, 32)
+				}
+				value = mat.PaddedBigBytes(common.Big0, 32)
+			}
+
+			if indexed {
+				if paramType == abi.StringTy {
+					value = crypto.Keccak256(value)
+				}
+				topic := common.BytesToHash(value)
+				topics = append(topics, topic)
+			} else {
+				if paramType == abi.StringTy {
+					strStartIndex = append(strStartIndex, len(data))
+					data = append(data, make([]byte, 32)...)
+					strData = append(strData, value)
+				} else {
+					data = append(data, common.LeftPadBytes(value, 32)...)
+				}
+			}
+		}
+
+		// append the string data at the end of the data, and
+		// update the start position of string data
+		if len(strStartIndex) > 0 {
+			for i := range strStartIndex {
+				value := strData[i]
+				startPos := abi.U256(new(big.Int).SetUint64(uint64(len(data))))
+				copy(data[strStartIndex[i]:], startPos)
+
+				size := abi.U256(new(big.Int).SetUint64(uint64(len(value))))
+				data = append(data, size...)
+				data = append(data, common.RightPadBytes(value, (len(value)+31)/32*32)...)
+			}
+		}
+
+		log.Debug("Report: ", "topics", topics, "data", data, "len", len(data))
+	}
+	return fnDef
 }
