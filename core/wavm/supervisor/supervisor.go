@@ -12,6 +12,7 @@ import (
 
 const (
 	ContractAddr = "0x0000000000000000000000000000000000000008"
+	BizMetaKey   = "BizMetas"
 )
 
 var (
@@ -21,6 +22,7 @@ var (
 
 var (
 	contractAddr = common.HexToAddress(ContractAddr)
+	bizMetaKey   = common.BytesToHash([]byte(BizMetaKey))
 	emptyAddress = common.Address{}
 )
 
@@ -72,6 +74,13 @@ func (s *Supervisor) Run(ctx inter.ChainContext, input []byte, value *big.Int) (
 			// TODO 加密，写监管节点日志
 			log.Info(data.Msg)
 		}
+	case isMethod("RegBizMeta"):
+		var data BizMetaReq
+		if err = supervisorAbi.UnpackInput(&data, methodName, methodArgs); err == nil {
+			// TODO 打包返回值
+			// c.RegBizMeta(data.Meta)
+			// Gen(data.Meta)
+		}
 	}
 	log.Debug("Supervisor call", "method", methodName)
 	if err != nil {
@@ -102,8 +111,40 @@ func (sc supervisorContext) GetBizContract(addr common.Address) (BizContract, er
 	return ret, nil
 }
 
-func (sc supervisorContext) RegBizMetaData() error {
-	return nil
+func (sc supervisorContext) RegBizMeta(data BizMetaReq) int {
+	var (
+		metas BizContractMetas
+		meta  BizMeta
+	)
+
+	// read from db, if not exist, just init
+	if str, err := sc.getStringFromDB(bizMetaKey); err == KeyNotExistErr {
+		metas = BizContractMetas{}
+		str, err := json.Marshal(metas)
+		if err != nil {
+			panic(err)
+		}
+		sc.setStringToDB(bizMetaKey, string(str))
+	} else if err != nil {
+		panic(err)
+	} else {
+		if json.Unmarshal([]byte(str), metas) != nil {
+			panic("解析失败")
+		}
+	}
+
+	// generate no and store
+	n := len(metas.Data)
+	n++
+	json.Unmarshal([]byte(data.Meta), meta)
+	meta.no = n
+	sc.setObject(PREFIX_BIZMETA, common.BigToAddress(big.NewInt(int64(n))), meta)
+	return n
+}
+
+func (sc supervisorContext) GetBizMeta(n int) BizMeta {
+	// todo check
+	return sc.getBizMeta(n)
 }
 
 func (sc supervisorContext) UpdateConfig(str string) error {
@@ -154,4 +195,12 @@ type Config struct {
 
 type ReportData struct {
 	Msg string
+}
+
+type BizMetaReq struct {
+	Meta string
+}
+
+type BizContractMetas struct {
+	Data []BizMeta
 }

@@ -7,17 +7,25 @@ import (
 	"github.com/vntchain/go-vnt/common"
 	"github.com/vntchain/go-vnt/log"
 	"github.com/vntchain/go-vnt/rlp"
+	"math/big"
 	"reflect"
 )
 
 const (
 	PREFIX_CONFIG      = byte(0)
 	PREFIX_BIZCONTRACT = byte(1)
+	PREFIX_BIZMETA     = byte(2)
 
 	PREFIXLENGTH = 4 // key的结构为，4位表前缀，20位address，8位的value在struct中的位置
 )
 
 var KeyNotExistErr = errors.New("the key do not exist")
+
+func (sc supervisorContext) getBizMeta(n int) BizMeta {
+	meta := BizMeta{}
+	sc.getObject(PREFIX_BIZMETA, common.BigToAddress(big.NewInt(int64(n))), meta)
+	return meta
+}
 
 func (sc supervisorContext) getObject(prefix byte, key common.Address, v interface{}) error {
 	str, err := sc.getStringFromDB(sc.getObjKey(prefix, key))

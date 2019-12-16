@@ -1,6 +1,7 @@
 package supervisor
 
 import (
+	"bytes"
 	"html/template"
 	"io/ioutil"
 	"os"
@@ -11,7 +12,7 @@ const (
 	BIZCONTRACT_TP = "bizContract"
 )
 
-func Gen(src string, out string) {
+func GenFile(src string, out string) {
 
 	// load templates
 	t1, err := template.ParseFiles(PATH + BIZCONTRACT_TP)
@@ -33,8 +34,24 @@ func Gen(src string, out string) {
 	}
 }
 
-func Reg_Biz(meta BizMeta) string {
-	// reg to supervisor contract
+func Gen(cfg string) string {
 
-	return ""
+	// load templates
+	t1, err := template.ParseFiles(PATH + BIZCONTRACT_TP)
+	if err != nil {
+		panic(err)
+	}
+
+	// parse bizMeta
+	bizMeta := BizMeta{}
+	if _, err := bizMeta.Decode([]byte(cfg)); err != nil {
+		panic(err)
+	}
+
+	buf := new(bytes.Buffer)
+	// render
+	if t1.Execute(buf, bizMeta) != nil {
+		panic("Gen failed !")
+	}
+	return buf.String()
 }

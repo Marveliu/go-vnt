@@ -36,6 +36,7 @@ type Data struct {
 }
 
 type BizMeta struct {
+	no      int    // 编号
 	BizName string `toml:"bizName"`
 	BizType string `toml:"bizType"`
 	Desc    string `toml:"desc"`

@@ -227,3 +227,6 @@ func (b *VntAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.Ma
 		go session.Multiplex(bloomRetrievalBatch, bloomRetrievalWait, b.vnt.bloomRequests)
 	}
 }
+
+// TODO 获得业务合约模板文件接口
+// func (b *VntAPIBackend) GetBizContractTemplate(n int) *types.Block {}
