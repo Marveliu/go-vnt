@@ -29,7 +29,7 @@ version = 1
 
   [[tasks.actions]]
     funcName = "publish"
-    funcType = 1
+    mutable = true
     dataRef = "Obj1"
 
 [[tasks]]
@@ -38,5 +38,5 @@ version = 1
 
   [[tasks.actions]]
     funcName = "transaction"
-    funcType = 2
-    dataRef = "Obj3"
+    mutable = false
+    dataRef = "Obj2"

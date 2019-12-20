@@ -21,19 +21,20 @@ const (
 
 var KeyNotExistErr = errors.New("the key do not exist")
 
-func (sc supervisorContext) getBizMeta(n int) BizMeta {
-	meta := BizMeta{}
-	sc.getObject(PREFIX_BIZMETA, common.BigToAddress(big.NewInt(int64(n))), meta)
+func (sc supervisorContext) getBizMeta(n uint32) *BizMeta {
+	meta := &BizMeta{}
+	if sc.getObject(PREFIX_BIZMETA, common.BigToAddress(big.NewInt(int64(n))), meta) != nil {
+		return nil
+	}
 	return meta
 }
 
 func (sc supervisorContext) getObject(prefix byte, key common.Address, v interface{}) error {
-	str, err := sc.getStringFromDB(sc.getObjKey(prefix, key))
+	b, err := sc.getBytesFromDB(sc.getObjKey(prefix, key))
 	if err != nil {
-		log.Error("Key not existed.", key)
-		return nil
+		return err
 	}
-	return json.Unmarshal([]byte(str), v)
+	return json.Unmarshal(b, v)
 }
 
 func (sc supervisorContext) setObject(prefix byte, key common.Address, v interface{}) error {
@@ -42,7 +43,7 @@ func (sc supervisorContext) setObject(prefix byte, key common.Address, v interfa
 		log.Error("Marshal supervisor fail.", v)
 		return nil
 	}
-	if err := sc.setStringToDB(sc.getObjKey(prefix, key), string(bytes)); err != nil {
+	if err := sc.setBytesToDB(sc.getObjKey(prefix, key), bytes); err != nil {
 		log.Error("setObject error", "err", err, "type", reflect.ValueOf(v).Kind())
 	}
 	return nil
@@ -56,17 +57,17 @@ func (sc supervisorContext) setToDB(key common.Hash, value common.Hash) {
 	sc.context.GetStateDb().SetState(contractAddr, key, value)
 }
 
-func (sc supervisorContext) getStringFromDB(key common.Hash) (string, error) {
+func (sc supervisorContext) getBytesFromDB(key common.Hash) ([]byte, error) {
 	valByte := sc.getFromDB(key)
 	if valByte == (common.Hash{}) {
-		return "", KeyNotExistErr
+		return nil, KeyNotExistErr
 	}
 
 	// 部分byte数组过长，是拆分了之后存储的
 	var val []byte
 	err := rlp.DecodeBytes(valByte.Big().Bytes(), &val)
 	if err == nil {
-		return string(val), nil
+		return val, nil
 	} else {
 		val = valByte.Big().Bytes()
 		var tmp []byte
@@ -74,17 +75,17 @@ func (sc supervisorContext) getStringFromDB(key common.Hash) (string, error) {
 			binary.BigEndian.PutUint32(key[PREFIXLENGTH+common.AddressLength:], uint32(j))
 			arrayByte := sc.getFromDB(key)
 			if arrayByte.Big().Sign() == 0 {
-				return "", KeyNotExistErr
+				return nil, KeyNotExistErr
 			}
 			val = append(val, arrayByte.Bytes()...)
 			if err = rlp.DecodeBytes(val, &tmp); err == nil {
-				return string(tmp), nil
+				return tmp, nil
 			}
 		}
 	}
 }
 
-func (sc supervisorContext) setStringToDB(key common.Hash, value string) error {
+func (sc supervisorContext) setBytesToDB(key common.Hash, value []byte) error {
 	elem, err := rlp.EncodeToBytes(value)
 	if err != nil {
 		return err

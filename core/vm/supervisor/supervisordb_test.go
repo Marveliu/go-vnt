@@ -1,10 +1,10 @@
 package supervisor
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/vntchain/go-vnt/common"
@@ -49,10 +49,10 @@ func TestStringDataLayer(t *testing.T) {
 	c := newSupervisorContext(context)
 	for i, tt := range tests {
 		key := common.BigToHash(big.NewInt(int64(i)))
-		if c.setStringToDB(key, tt) != nil {
+		if c.setBytesToDB(key, []byte(tt)) != nil {
 			t.Errorf("test: %d failed, setVal: %s", i, tt)
 		}
-		if val, err := c.getStringFromDB(key); err != nil || strings.Compare(tt, val) != 0 {
+		if val, err := c.getBytesFromDB(key); err != nil || bytes.Compare([]byte(tt), val) != 0 {
 			t.Errorf("test: %d failed, want: %s, get: %s", i, tt, val)
 		}
 	}
@@ -72,5 +72,15 @@ func Test_supervisorContext_getObjKey(t *testing.T) {
 		fmt.Println(src)
 		str := c.getObjKey(PREFIX_CONFIG, src)
 		fmt.Println(str)
+	}
+}
+
+func Test_supervisorContext_GetBizMetasNum(t *testing.T) {
+	context := newcontext()
+	c := newSupervisorContext(context)
+	n1 := c.GetBizMetasNum()
+	c.AddBizMetasNum()
+	if c.GetBizMetasNum() != n1 {
+		t.Errorf("test: failed")
 	}
 }

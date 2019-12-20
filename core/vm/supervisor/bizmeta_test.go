@@ -11,23 +11,23 @@ import (
 func TestBizMetaRW(t *testing.T) {
 	path := "tests/BizMeta.toml"
 	task := BizMeta{
-		"交易",
-		"1",
-		"做个交易",
-		1,
-		[]Data{
+		BizName: "交易",
+		BizType: "1",
+		Desc:    "做个交易",
+		Version: 1,
+		Datas: []Data{
 			{"Obj1", "1,2", []Field{
 				{"From", "string"},
 				{"To", "string"},
 			}},
 			{"Obj2", "1", []Field{{"To", "string"}}},
 		},
-		[]Task{
+		Tasks: []Task{
 			{"发布", "发布商品", []Action{
 				Action{"publish", true, "Obj1"},
 			}},
 			{"交易", "交易商品", []Action{
-				Action{"transaction", false, "Obj3"},
+				Action{"transaction", false, "Obj2"},
 			}},
 		},
 	}

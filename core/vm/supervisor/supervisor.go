@@ -16,8 +16,9 @@ const (
 )
 
 var (
-	ErrDescInvalid = errors.New("the length of contract's description should between [10, 200]")
-	ErrNotExisted  = errors.New("the target is not existed")
+	ErrDescInvalid    = errors.New("the length of contract's description should between [10, 200]")
+	ErrNotExisted     = errors.New("the target is not existed")
+	ErrBizMetaExisted = errors.New("the target is  existed")
 )
 
 var (
@@ -60,6 +61,12 @@ func (s *Supervisor) Run(ctx inter.ChainContext, input []byte, value *big.Int) (
 
 	c := newSupervisorContext(ctx)
 	sender := ctx.GetOrigin()
+
+	var (
+		ret []byte
+	)
+
+	ret = nil
 	switch {
 	case isMethod("RegisterBizContract"):
 		var bizContract BizContract
@@ -68,25 +75,40 @@ func (s *Supervisor) Run(ctx inter.ChainContext, input []byte, value *big.Int) (
 			c.RegisterBizContract(bizContract)
 		}
 	// case isMethod("updateConfig"):
-	case isMethod("ReportData"):
-		var data ReportData
+	case isMethod("Report"):
+		var data ReportReq
 		if err = supervisorAbi.UnpackInput(&data, methodName, methodArgs); err == nil {
-			// TODO 加密，写监管节点日志
-			log.Info(data.Msg)
+			log.Info(string(data.Msg))
 		}
 	case isMethod("RegBizMeta"):
 		var data BizMetaReq
 		if err = supervisorAbi.UnpackInput(&data, methodName, methodArgs); err == nil {
-			// TODO 打包返回值
-			// c.RegBizMeta(data.Meta)
-			// Gen(data.Meta)
+			err = c.RegBizMeta(data)
+			// topics := make([]common.Hash, 0)
+			// ctx.GetStateDb().AddLog(&types.Log{
+			// 	Address:     contractAddr,
+			// 	Topics:      topics,
+			// 	Data:        abi.U256(big.NewInt(int64(n))),
+			// 	BlockNumber: ctx.GetBlockNum().Uint64(),
+			// })
+		}
+	case isMethod("GetBizMetaTemplate"):
+		var data BizContractTpReq
+		if err = supervisorAbi.UnpackInput(&data, methodName, methodArgs); err == nil {
+			meta := c.getBizMeta(data.BizType)
+			if meta != nil {
+				ret, err = PackOutPut(supervisorAbi, methodName, GenFromBizMeta(*meta))
+			}
 		}
 	}
-	log.Debug("Supervisor call", "method", methodName)
+
 	if err != nil {
 		log.Error("call supervisor contract err:", "method", methodName, "err", err)
+	} else {
+		log.Debug("Supervisor call", "method", methodName)
 	}
-	return nil, err
+
+	return ret, err
 }
 
 type supervisorContext struct {
@@ -111,38 +133,19 @@ func (sc supervisorContext) GetBizContract(addr common.Address) (BizContract, er
 	return ret, nil
 }
 
-func (sc supervisorContext) RegBizMeta(data BizMetaReq) int {
-	var (
-		metas BizContractMetas
-		meta  BizMeta
-	)
-
-	// read from db, if not exist, just init
-	if str, err := sc.getStringFromDB(bizMetaKey); err == KeyNotExistErr {
-		metas = BizContractMetas{}
-		str, err := json.Marshal(metas)
-		if err != nil {
-			panic(err)
-		}
-		sc.setStringToDB(bizMetaKey, string(str))
-	} else if err != nil {
-		panic(err)
-	} else {
-		if json.Unmarshal([]byte(str), metas) != nil {
-			panic("解析失败")
-		}
+func (sc supervisorContext) RegBizMeta(data BizMetaReq) error {
+	var meta BizMeta
+	if _, err := meta.Decode(common.FromHex(data.Cfg)); err != nil {
+		return err
 	}
-
-	// generate no and store
-	n := len(metas.Data)
-	n++
-	json.Unmarshal([]byte(data.Meta), meta)
-	meta.no = n
-	sc.setObject(PREFIX_BIZMETA, common.BigToAddress(big.NewInt(int64(n))), meta)
-	return n
+	// generate No and store
+	if sc.getBizMeta(meta.No) != nil {
+		return ErrBizMetaExisted
+	}
+	return sc.setObject(PREFIX_BIZMETA, common.BigToAddress(big.NewInt(int64(meta.No))), meta)
 }
 
-func (sc supervisorContext) GetBizMeta(n int) BizMeta {
+func (sc supervisorContext) GetBizMeta(n uint32) *BizMeta {
 	// todo check
 	return sc.getBizMeta(n)
 }
@@ -193,14 +196,14 @@ type Config struct {
 	ReportConfig      map[string]ReportConfig // 配置文件格式
 }
 
-type ReportData struct {
-	Msg string
+type ReportReq struct {
+	Msg []byte
 }
 
 type BizMetaReq struct {
-	Meta string
+	Cfg string
 }
 
-type BizContractMetas struct {
-	Data []BizMeta
+type BizContractTpReq struct {
+	BizType uint32
 }

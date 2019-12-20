@@ -22,7 +22,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/vntchain/go-vnt/core/wavm/supervisor"
+	"github.com/vntchain/go-vnt/core/vm/supervisor"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -1378,7 +1378,7 @@ func (ef *EnvFunctions) Report(proc *exec.WavmProcess, strIdx uint64) {
 	var res []byte
 	strValue := proc.ReadAt(strIdx)
 	log.Info("Contract Report >>>>", "func", funcName, "message", string(strValue))
-	res, err = Abi.Pack("ReportData", string(strValue))
+	res, err = Abi.Pack("ReportReq", string(strValue))
 	if err != nil {
 		panic(err.Error())
 	}
