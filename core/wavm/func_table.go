@@ -61,7 +61,7 @@ const (
 
 	OpNameContractCall = "ContractCall"
 
-	//将字符串转化为地址
+	// 将字符串转化为地址
 	OpNameAddressFrom     = "AddressFrom"
 	OpNameAddressToString = "AddressToString"
 	OpNameU256From        = "U256From"
@@ -72,7 +72,7 @@ const (
 	OpNameReadWithPointer     = "ReadWithPointer"
 	OpNameInitializeVariables = "InitializeVariables"
 
-	//uint256
+	// uint256
 	OpNameU256FromU64 = "U256FromU64"
 	OpNameU256FromI64 = "U256FromI64"
 	OpNameU256Add     = "U256_Add"
@@ -88,21 +88,22 @@ const (
 	OpNameU256Or      = "U256_Or"
 	OpNameU256Xor     = "U256_Xor"
 
-	//math
+	// math
 	OpNamePow = "Pow"
 
-	//add gas
+	// add gas
 	OpNameAddGas = "AddGas"
 
 	OpNameRevert = "Revert"
 
-	//qlang
+	// qlang
 	OpNameSender = "Sender"
 	OpNameLoad   = "Load"
 	OpNameStore  = "Store"
 
-	//supervisor
-	OpReport = "Report"
+	// supervisor
+	OpReport         = "Report"
+	OpRegBizContract = "RegBizContract"
 )
 
 func (ef *EnvFunctions) getFuncTable() map[string]wasm.Function {
@@ -706,10 +707,10 @@ func (ef *EnvFunctions) getFuncTable() map[string]wasm.Function {
 				Code: []byte{},
 			},
 		},
-		OpReport: {
-			Host: reflect.ValueOf(ef.Report),
+		OpRegBizContract: {
+			Host: reflect.ValueOf(ef.RegBizContract),
 			Sig: &wasm.FunctionSig{
-				ParamTypes:  []wasm.ValueType{wasm.ValueTypeI32},
+				ParamTypes:  []wasm.ValueType{wasm.ValueTypeI64},
 				ReturnTypes: []wasm.ValueType{},
 			},
 			Body: &wasm.FunctionBody{
@@ -721,11 +722,11 @@ func (ef *EnvFunctions) getFuncTable() map[string]wasm.Function {
 }
 
 //
-//func ResolveHostFunc() map[FieldName]*Function {
-//	for k, v := range resolveHostFunc {
-//		v.IsHost = true
-//		v.FieldName = k
-//		resolveHostFunc[k] = v
-//	}
-//	return resolveHostFunc
-//}
+// func ResolveHostFunc() map[FieldName]*Function {
+// 	for k, v := range resolveHostFunc {
+// 		v.IsHost = true
+// 		v.FieldName = k
+// 		resolveHostFunc[k] = v
+// 	}
+// 	return resolveHostFunc
+// }

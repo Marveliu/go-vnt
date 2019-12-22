@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/vntchain/go-vnt/core/vm/supervisor"
@@ -1355,18 +1356,55 @@ func (ef *EnvFunctions) forbiddenMutable(proc *exec.WavmProcess) {
 }
 
 // Report Data To Supervisor
-func (ef *EnvFunctions) Report(proc *exec.WavmProcess, strIdx uint64) {
+// func (ef *EnvFunctions) Report(proc *exec.WavmProcess, strIdx uint64) {
+//
+// 	Abi, err := supervisor.GetSuervisorABI()
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+//
+// 	funcName := ef.ctx.Wavm.Wavm.GetFuncName()
+// 	toAddr := common.HexToAddress(supervisor.ContractAddr)
+// 	amount := big.NewInt(0)
+// 	gascost := uint64(10)
+//
+// 	var gaslimit *big.Int
+// 	gaslimit = new(big.Int).SetUint64(gascost)
+// 	gas := ef.ctx.GasCounter.GasCall(toAddr, amount, gaslimit, ef.ctx.BlockNumber, ef.ctx.Wavm.GetChainConfig(), ef.ctx.StateDB)
+// 	ef.ctx.Wavm.SetCallGasTemp(gas)
+// 	if amount.Sign() != 0 {
+// 		gas += params.CallStipend * 10
+// 	}
+//
+// 	var res []byte
+// 	strValue := proc.ReadAt(strIdx)
+// 	log.Info("Contract Report >>>>", "func", funcName, "message", string(strValue))
+// 	res, err = Abi.Pack("ReportReq", string(strValue))
+// 	if err != nil {
+// 		panic(err.Error())
+// 	}
+//
+// 	_, returnGas, err := ef.ctx.Wavm.Call(ef.ctx.Contract, toAddr, res, gas, amount)
+// 	failError := errors.New(errContractCallResult)
+// 	if err != nil {
+// 		e := fmt.Errorf("%s Reason : %s", failError, err)
+// 		panic(e)
+// 	} else {
+// 		ef.ctx.Contract.Gas += returnGas
+// 	}
+// }
 
-	Abi, err := supervisor.GetSuervisorABI()
+// GetBlockHash get the block hash
+func (ef *EnvFunctions) RegBizContract(proc *exec.WavmProcess, No uint64) {
+
+	sabi, err := supervisor.GetSuervisorABI()
 	if err != nil {
 		panic(err.Error())
 	}
 
-	funcName := ef.ctx.Wavm.Wavm.GetFuncName()
 	toAddr := common.HexToAddress(supervisor.ContractAddr)
 	amount := big.NewInt(0)
 	gascost := uint64(10)
-
 	var gaslimit *big.Int
 	gaslimit = new(big.Int).SetUint64(gascost)
 	gas := ef.ctx.GasCounter.GasCall(toAddr, amount, gaslimit, ef.ctx.BlockNumber, ef.ctx.Wavm.GetChainConfig(), ef.ctx.StateDB)
@@ -1374,11 +1412,12 @@ func (ef *EnvFunctions) Report(proc *exec.WavmProcess, strIdx uint64) {
 	if amount.Sign() != 0 {
 		gas += params.CallStipend * 10
 	}
-
 	var res []byte
-	strValue := proc.ReadAt(strIdx)
-	log.Info("Contract Report >>>>", "func", funcName, "message", string(strValue))
-	res, err = Abi.Pack("ReportReq", string(strValue))
+	log.Info("BizContract Reg >>>>", "No", No)
+
+	owner := ef.ctx.Contract.Caller()
+	contract := ef.ctx.Contract.Address()
+	res, err = sabi.Pack("RegisterBizContract", contract, owner, uint32(No))
 	if err != nil {
 		panic(err.Error())
 	}
@@ -1411,76 +1450,76 @@ func (ef *EnvFunctions) getReport(funcName string) interface{} {
 			panic(fmt.Sprintf(errEventArgsMismatch, abiParamLen, paramLen))
 		}
 
-		topics := make([]common.Hash, 0)
-		data := make([]byte, 0)
+		data := make(map[string]supervisor.ReportField)
 
-		topics = append(topics, event.Id())
-
-		strStartIndex := make([]int, 0)
-		strData := make([][]byte, 0)
-
+		// 汇报数据转化成弱模型
 		for i := 0; i < paramLen; i++ {
 			input := event.Inputs[i]
-			indexed := input.Indexed
 			paramType := input.Type.T
 			param := vars[i]
-			var value []byte
+			var value interface{}
 			switch paramType {
 			case abi.AddressTy, abi.StringTy:
-				value = proc.ReadAt(param)
+				value = string(proc.ReadAt(param))
 			case abi.UintTy, abi.IntTy:
 				if input.Type.Kind == reflect.Ptr {
 					mem := proc.ReadAt(param)
 					bigint := utils.GetU256(mem)
-					value = abi.U256(bigint)
+					value = bigint
 				} else if paramType == abi.UintTy {
-					value = abi.U256(new(big.Int).SetUint64(param))
+					value = new(big.Int).SetUint64(param)
 				} else {
 					if input.Type.Size == 32 {
-						value = abi.U256(big.NewInt(int64(int32(param))))
+						value = big.NewInt(int64(int32(param)))
 					} else {
-						value = abi.U256(big.NewInt(int64(param)))
+						value = big.NewInt(int64(param))
 					}
 				}
 			case abi.BoolTy:
 				if param == 1 {
-					value = mat.PaddedBigBytes(common.Big1, 32)
-				}
-				value = mat.PaddedBigBytes(common.Big0, 32)
-			}
-
-			if indexed {
-				if paramType == abi.StringTy {
-					value = crypto.Keccak256(value)
-				}
-				topic := common.BytesToHash(value)
-				topics = append(topics, topic)
-			} else {
-				if paramType == abi.StringTy {
-					strStartIndex = append(strStartIndex, len(data))
-					data = append(data, make([]byte, 32)...)
-					strData = append(strData, value)
+					value = true
 				} else {
-					data = append(data, common.LeftPadBytes(value, 32)...)
+					value = false
 				}
 			}
-		}
-
-		// append the string data at the end of the data, and
-		// update the start position of string data
-		if len(strStartIndex) > 0 {
-			for i := range strStartIndex {
-				value := strData[i]
-				startPos := abi.U256(new(big.Int).SetUint64(uint64(len(data))))
-				copy(data[strStartIndex[i]:], startPos)
-
-				size := abi.U256(new(big.Int).SetUint64(uint64(len(value))))
-				data = append(data, size...)
-				data = append(data, common.RightPadBytes(value, (len(value)+31)/32*32)...)
+			field := supervisor.ReportField{
+				FieldType: paramType,
+				Value:     value,
 			}
+			data[input.Name] = field
 		}
 
-		log.Debug("Report: ", "topics", topics, "data", data, "len", len(data))
+		str, _ := json.Marshal(data)
+		dataName := strings.Split(funcName, "_")[1]
+
+		sabi, err := supervisor.GetSuervisorABI()
+		if err != nil {
+			panic(err.Error())
+		}
+		res, err := sabi.Pack("Report", ef.ctx.Contract.Address(), dataName, string(str))
+		callSupervisor(ef, res)
 	}
 	return fnDef
+}
+
+func callSupervisor(ef *EnvFunctions, res []byte) {
+
+	toAddr := common.HexToAddress(supervisor.ContractAddr)
+	amount := big.NewInt(0)
+	gascost := uint64(10)
+	var gaslimit *big.Int
+	gaslimit = new(big.Int).SetUint64(gascost)
+	gas := ef.ctx.GasCounter.GasCall(toAddr, amount, gaslimit, ef.ctx.BlockNumber, ef.ctx.Wavm.GetChainConfig(), ef.ctx.StateDB)
+	ef.ctx.Wavm.SetCallGasTemp(gas)
+	if amount.Sign() != 0 {
+		gas += params.CallStipend * 10
+	}
+	_, returnGas, err := ef.ctx.Wavm.Call(ef.ctx.Contract, toAddr, res, gas, amount)
+	failError := errors.New(errContractCallResult)
+	if err != nil {
+		e := fmt.Errorf("%s Reason : %s", failError, err)
+		panic(e)
+	} else {
+		ef.ctx.Contract.Gas += returnGas
+	}
 }

@@ -160,6 +160,10 @@ func runWavm(wavm *WAVM, contract *wasmcontract.WASMContract, input []byte, isCr
 		code.Compiled = compileres
 		res = utils.CompressWasmAndAbi(code.Abi, code.Code, code.Compiled)
 	} else {
+		// TODO 执行监控合约检查，没有注册通过的合约无法运行，不走合约，直接走本地的方法调用
+		// sp := vm.GetSupervisor()
+		// sp.Run()
+
 		var compiled []vnt.Compiled
 		err = json.Unmarshal(code.Compiled, &compiled)
 		if err != nil {

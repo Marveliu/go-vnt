@@ -15,10 +15,10 @@ var (
 		Owner:     common.HexToAddress("9ee97d274eb4c215f23238fee1f103d9ea10a234"),
 		Address:   common.HexToAddress("9ee97d274eb4c215f23238fee1f103d9ea10a234"),
 		TimeStamp: big.NewInt(1531454152),
-		Status:    big.NewInt(0),
-		BizType:   big.NewInt(0),
-		Name:      []byte("Hello"),
-		Desc:      []byte("Hello World"),
+		Status:    0,
+		BizType:   123,
+		Name:      "Hello",
+		Desc:      "Hello World",
 	}
 )
 
@@ -26,14 +26,14 @@ func TestObjDataLayer(t *testing.T) {
 	context := newcontext()
 	c := newSupervisorContext(context)
 	if c.setObject(PREFIX_BIZCONTRACT, bizContract.Owner, bizContract) != nil {
-		t.Errorf("test: failed, setVal: %s", bizContract)
+		t.Errorf("test: failed, setVal: %s", bizContract.Name)
 	}
 	nb := BizContract{}
 	if c.getObject(PREFIX_BIZCONTRACT, bizContract.Owner, &nb) != nil {
-		t.Errorf("test: failed, getVal: %s", bizContract)
+		t.Errorf("test: failed, getVal: %s", bizContract.Name)
 	}
 	if !reflect.DeepEqual(bizContract, nb) {
-		t.Errorf("test: failed, want: %s, get: %s", bizContract, nb)
+		t.Errorf("test: failed, want: %s, get: %s", bizContract.Name, nb.Name)
 	}
 }
 
@@ -72,15 +72,5 @@ func Test_supervisorContext_getObjKey(t *testing.T) {
 		fmt.Println(src)
 		str := c.getObjKey(PREFIX_CONFIG, src)
 		fmt.Println(str)
-	}
-}
-
-func Test_supervisorContext_GetBizMetasNum(t *testing.T) {
-	context := newcontext()
-	c := newSupervisorContext(context)
-	n1 := c.GetBizMetasNum()
-	c.AddBizMetasNum()
-	if c.GetBizMetasNum() != n1 {
-		t.Errorf("test: failed")
 	}
 }

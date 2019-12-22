@@ -12,14 +12,15 @@ Version: {{.Version}}
 
 // ************* 监管数据定义 begin ************* //
 {{range $i, $d := .Datas}}
-EVENT REPORT_{{$d.Name}}(string name{{range $i, $f := $d.Fields}},{{$f.Type}} {{$f.Name}}{{end}});
+EVENT REPORT_{{$d.Name}}(string reportDataName{{range $i, $f := $d.Fields}},{{$f.Type}} {{$f.Name}}{{end}});
 {{end}}
 // ************* 监管数据定义 end ************* //
 
 // 初始化
 constructor {{ .BizName }}()
 {
-	// implement me!
+	// Reg to supervisor!
+	RegBizContract({{.No}});
 }
 
 // ************* 业务方法 begin ************* //

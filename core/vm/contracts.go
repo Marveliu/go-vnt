@@ -48,3 +48,12 @@ func RunPrecompiledContract(context inter.ChainContext, p PrecompiledContract, i
 	}
 	return nil, ErrOutOfGas
 }
+
+// TODO
+func GetSupervisor() *supervisor.Supervisor {
+	precompiledContract := PrecompiledContractsHubble[common.BytesToAddress([]byte{8})]
+	if precompiledContract != nil {
+		return precompiledContract.(*supervisor.Supervisor)
+	}
+	return nil
+}
