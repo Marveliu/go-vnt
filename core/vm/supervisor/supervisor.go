@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vntchain/go-vnt/accounts/abi"
 	"github.com/vntchain/go-vnt/common"
+	"github.com/vntchain/go-vnt/core/types"
 	"github.com/vntchain/go-vnt/core/vm/interface"
 	"github.com/vntchain/go-vnt/log"
 	"math/big"
@@ -148,9 +149,7 @@ func newSupervisorContext(ctx inter.ChainContext) supervisorContext {
 }
 
 func (sc supervisorContext) RegisterBizContract(req RegContractReq) error {
-
 	// TODO req 检查
-
 	meta := sc.getBizMeta(req.BizType)
 	if meta == nil {
 		return ErrNotExisted
@@ -272,7 +271,23 @@ func (sc supervisorContext) RecordData(addr common.Address, dataName string, msg
 		return ErrReportDataNotFound
 	}
 
-	log.Debug("ReportData", msg)
+	topics := make([]common.Hash, 0)
+	topics = append(topics, addr.Hash())
+	vs := make([]ReportField, 0, len(data))
+	for _, v := range data {
+		vs = append(vs, v)
+	}
+	d := StructReport{
+		BizType: meta.BizType,
+		Datas:   vs,
+	}
+	bs, _ := json.Marshal(d)
+	sc.context.GetStateDb().AddLog(&types.Log{
+		Address:     contractAddr,
+		Topics:      topics,
+		Data:        bs,
+		BlockNumber: sc.context.GetBlockNum().Uint64(),
+	})
 	return nil
 }
 
@@ -332,4 +347,9 @@ type BizContractTpReq struct {
 type ReportField struct {
 	FieldType byte
 	Value     interface{}
+}
+
+type StructReport struct {
+	BizType string
+	Datas   []ReportField
 }
